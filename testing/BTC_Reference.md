@@ -30,7 +30,7 @@ server=1
 
 ## Start bitcoind in regtest 
 
-bitcoind -regtest -daemon
+`bitcoind -regtest -daemon`
 
 ## Generate some transactions
 
