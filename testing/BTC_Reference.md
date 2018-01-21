@@ -16,6 +16,8 @@ sudo apt-get install bitcoind
 mkdir ~/.bitcoin/
 ```
 
+For dev, you could also use precompiled binaries from https://bitcoin.org/en/download instead of compiling from source.
+
 ## Edit config
 
 nano ~/.bitcoin/bitcoind.conf
