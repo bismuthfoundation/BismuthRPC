@@ -4,6 +4,7 @@ Since the json-rpc and bitcoind API is standard, in theory you can use any avail
 
 ## Python Clients
 
-TODO
+Wrapper : https://github.com/jgarzik/python-bitcoinrpc  
+`pip3 install python-bitcoinrpc`
 
 ## Other clients
