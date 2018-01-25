@@ -17,6 +17,7 @@ jsonrpcclient.config.validate = False
 # The test bismuthd.py server
 client = HTTPClient('http://username:password@127.0.0.1:8115/')
 
+
 # For json-rpc over SSL
 #client.session.verify = '/path/to/certificate'
 

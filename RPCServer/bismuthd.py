@@ -23,14 +23,15 @@ __version__ = "0.0.2"
 
 ## Json-rpc calls ##
 
+
+# TODO: since we redirect all to node.() calls, there should be a generic way of handling that and calling 
+# It's ridiculous to convert from functions to methods of a single instance.
+# check methods.dispatch
+
 @methods.add
 async def getinfo(context=None):
-    # mockup
-    info = {"version":__version__,"balance":10.00,"blocks":102,"timeoffset":0,"protocolversion":"mainnnet0016","walletversion":"1.4.1.9","connections":17,"difficulty":109.65,"testnet":False,"errors":""}
-    # context holds config and node
-    #if context:
-    #   print("config",context.config.__dict__)
-    return info
+    # context holds a nodeclient instance
+    return context.info()
 
 @methods.add
 async def getbalance(account='', context=None):
@@ -74,6 +75,8 @@ async def listsinceblock(blockhash='', context=None):
 class MainHandler(web.RequestHandler):
     """Tornado Http request handler"""
     
+    # TODO: need to add Basic http auth
+    
     def initialize(self, config):
         self.node = nodeclient.node(config)
         self.config = config
@@ -85,7 +88,8 @@ class MainHandler(web.RequestHandler):
         request = self.request.body.decode()
         if self.config.verbose > 1:
             print(request)
-        response = await methods.dispatch(request,context=self)
+        # We can pass node only, since node gets config anyway.
+        response = await methods.dispatch(request, context=self.node)
         if not response.is_notification:
             self.write(response)
 
@@ -94,10 +98,13 @@ class MainHandler(web.RequestHandler):
 if __name__ == "__main__":
     
     rpc_config = config.Get()
-
+    # add our current code version
+    rpc_config.version = __version__
+    
     # see http://www.tornadoweb.org/en/stable/httpserver.html#http-server for ssl
     # see http://www.tornadoweb.org/en/stable/web.html#tornado.web.Application.settings for logging and such
-    app = web.Application([(r"/", MainHandler,dict(config=rpc_config))])
+    # see also http://www.tornadoweb.org/en/stable/guide/structure.html#the-application-object
+    app = web.Application([(r"/", MainHandler, dict(config=rpc_config))])
 
     app.listen(rpc_config.rpcport)
     
