@@ -5,6 +5,8 @@ WIP.
 Just sending mockup data right no, no connection to a real bismuth node.  
 Only testing the service/client rpc protocol.
 
+*Needs Python3.6 min*
+
 ## Install
 
 See requirements.txt from upper dir.

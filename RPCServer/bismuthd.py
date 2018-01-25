@@ -21,9 +21,7 @@ import config
 __version__ = "0.0.1"
 
 
-global rpc_config
-
-   
+## Json-rpc calls ##
 
 @methods.add
 async def getinfo():
@@ -72,24 +70,31 @@ async def listsinceblock(blockhash=''):
 
 
 class MainHandler(web.RequestHandler):
+	"""Tornado Http request handler"""
+	
+	def __init__(self,rpc_config):
+		self.rpc_config = rpc_config
+
 	async def get(self):
 		self.write("JSONRPC server handles only POST requests")
+
 	async def post(self):
 		request = self.request.body.decode()
-		if rpc_config.verbose > 1:
+		if self.rpc_config.verbose > 1:
 			print(request)
 		response = await methods.dispatch(request)
 		if not response.is_notification:
-			
 			self.write(response)
 
-# see http://www.tornadoweb.org/en/stable/httpserver.html#http-server for ssl
-# see http://www.tornadoweb.org/en/stable/web.html#tornado.web.Application.settings for logging and such
-app = web.Application([(r"/", MainHandler)])
 
 
 if __name__ == "__main__":
+	
 	rpc_config = config.Get()
+
+	# see http://www.tornadoweb.org/en/stable/httpserver.html#http-server for ssl
+	# see http://www.tornadoweb.org/en/stable/web.html#tornado.web.Application.settings for logging and such
+	app = web.Application([(r"/", MainHandler(rpc_config))])
 
 	app.listen(rpc_config.rpcport)
 	
