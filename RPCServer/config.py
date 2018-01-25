@@ -5,12 +5,12 @@ Config file manager.
 import os.path as path
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 class Get:
     
     # "param_name":["type"] or "param_name"=["type","property_name"]
-    vars={"rpcuser":["str"],"rpcpassword":["str"],"loglevel":["str"],"verbose":["int"],"rpcport":["int"]}
+    vars={"bismuthnode":["str"],"bismuthpath":["str"],"rpcuser":["str"],"rpcpassword":["str"],"loglevel":["str"],"verbose":["int"],"rpcport":["int"]}
  
     def __init__(self):
         self.verbose = 0
@@ -36,7 +36,7 @@ class Get:
                 if len(params)>1:
                     # deal with properties that do not match the config name.
                     left = params[1]
-                setattr(self,left,right)                
+                setattr(self,left,right)      
         if self.verbose:
             print(self.__dict__)           
                     
@@ -46,3 +46,5 @@ class Get:
         # then override with optional custom config
         if path.exists("bismuthd.conf"):
             self.load_file("bismuthd.conf")
+        # TODO: raise error if missing critical info like bismuth node/path
+        # Better : raise in the client class, where we need it.
