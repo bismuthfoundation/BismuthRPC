@@ -46,7 +46,8 @@ class node:
         Could take a param like verbosity of returned info later.
         """
         try:       
-			# TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
+            # TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
+            # Moreover, it's not necessary to keep a connection open all the time. Not all commands need one, so it just need to connect on demand if it is not.
             connections.send(self.s, "statusjson")
             info = connections.receive(self.s)
             """
