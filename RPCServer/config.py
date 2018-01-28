@@ -37,8 +37,6 @@ class Get:
                     # deal with properties that do not match the config name.
                     left = params[1]
                 setattr(self,left,right)      
-        if self.verbose:
-            print(self.__dict__)           
                     
     def read(self):
         # first of all, load from default config so we have all needed params
@@ -48,3 +46,5 @@ class Get:
             self.load_file("bismuthd.conf")
         # TODO: raise error if missing critical info like bismuth node/path
         # Better : raise in the client class, where we need it.
+        if self.verbose:
+            print(self.__dict__)           
