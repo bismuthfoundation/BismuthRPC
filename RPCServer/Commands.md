@@ -8,14 +8,14 @@ I'll edit along the way with what is supported or not (yet)
 
 * getinfo - Returns an object containing various state info.  
 
-## Working on
+## Working on
 
-* getaccount  |  <bitcoinaddress>  -  Returns the account associated with the given address.
-* getaccountaddress  |  <account>  -  Returns the current bitcoin address for receiving payments to this account. If <account> does not exist, it will be created along with an associated new address that will be returned.
-* getaddressesbyaccount  |  <account>  -  Returns the list of addresses for the given account.
-* getbalance  |  [account] [minconf=1]  -  If [account] is not specified, returns the server's total available balance.If [account] is specified, returns the balance in the account.
+* getaccount  (bitcoinaddress)  -  Returns the account associated with the given address.
+* getaccountaddress  (account)  -  Returns the current bitcoin address for receiving payments to this account. If (account) does not exist, it will be created along with an associated new address that will be returned.
+* getaddressesbyaccount  (account)  -  Returns the list of addresses for the given account.
+* getbalance  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance.If (account) is specified, returns the balance in the account.
 
-## To be implemented
+## To be implemented
 
 |  help  |  [command]  |  List commands, or get help for a command.  |  N
 |  stop  |   |  Stop bitcoin server.  |  N
