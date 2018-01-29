@@ -14,7 +14,7 @@ from tornado.ioloop import IOLoop
 from tornado.web import Application
 
 # custom modules
-import config, nodeclient
+import rpcconfig, nodeclient
 from tornado_jsonrpc import JSONRPCHandler
 
 
@@ -24,7 +24,7 @@ __version__ = "0.0.3"
 
 if __name__ == "__main__":
     
-    rpc_config = config.Get()
+    rpc_config = rpcconfig.Get()
     # add our current code version
     rpc_config.version = __version__
     
