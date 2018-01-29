@@ -12,7 +12,7 @@ A basic Bismuth node.py client for the Json-RPRC gateway
 import socket
 
 # Bismuth specific modules
-import connections
+import rpcconnections
 """
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
@@ -36,9 +36,9 @@ class node:
         self.s = socket.socket()
         self.s.connect(self.node_ipport)
  
-     """
-     All json-rpc calls are directly mapped to async methods here thereafter:
-     """
+    """
+    All json-rpc calls are directly mapped to async methods here thereafter:
+    """
  
     async def getinfo(self, *args, **kwargs):
         """
@@ -48,8 +48,8 @@ class node:
         try:       
             # TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
             # Moreover, it's not necessary to keep a connection open all the time. Not all commands need one, so it just need to connect on demand if it is not.
-            connections.send(self.s, "statusjson")
-            info = connections.receive(self.s)
+            rpcconnections.send(self.s, "statusjson")
+            info = rpcconnections.receive(self.s)
             """
             info = {"version":self.config.version, "protocolversion":"mainnet0016", "walletversion":data[7], "testnet":False, # config data
                     "balance":10.00, "blocks":data[5], "timeoffset":0, "connections":data[1], "difficulty":109.65, # live status

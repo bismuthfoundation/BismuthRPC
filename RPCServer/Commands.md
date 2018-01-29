@@ -44,11 +44,18 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
 * dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
 * dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file 
-* encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase). 
 * importprivkey  -  (bitcoinprivkey) (label) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
+
+* encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
+  Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
+  This call returns the random IV used, that has to be stored with the passphrase. Both are needed to unlock the wallet.
+* walletpassphrase  -  (passphrase) (timeout)  -  Stores the wallet decryption key in memory for (timeout) seconds.  
+  passphrase is composed of the IV given by the encryptwallet or walletpassphrasechange call, plus the passphrase itself.
+* walletpassphrasechange  -  (oldpassphrase) (newpassphrase)  -  Changes the wallet passphrase from (oldpassphrase) to (newpassphrase).  
+  Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
+  This call returns the random IV used.
 * walletlock  -   * Removes the wallet encryption key from memory, locking the wallet. After calling this method, you will need to call walletpassphrase again before being able to call any methods which require the wallet to be unlocked. 
-* walletpassphrase  -  (passphrase) (timeout)  -  Stores the wallet decryption key in memory for (timeout) seconds. 
-* walletpassphrasechange  -  (oldpassphrase) (newpassphrase)  -  Changes the wallet passphrase from (oldpassphrase) to (newpassphrase). 
+
 
 * sendfrom  -  (fromaccount) (tobitcoinaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object). 
 * sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers 
