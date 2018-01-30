@@ -3,7 +3,7 @@
 
 """
 A basic Bismuth node.py client for the Json-RPRC gateway
-
+Also handles wallet and accounts
 @EggPool
 
 """
@@ -12,7 +12,7 @@ A basic Bismuth node.py client for the Json-RPRC gateway
 import socket
 
 # Bismuth specific modules
-import rpcconnections
+import rpcconnections, rpcwallet
 """
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
@@ -24,10 +24,11 @@ class node:
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
     
-    __slots__ = ("config", "s", "node_ipport");
+    __slots__ = ("config", "wallet", "s", "node_ipport");
     
     def __init__(self, config):
         self.config = config
+        self.wallet = rpcwallet.wallet(verbose=config.verbose)
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
         self.node_ipport = (node_ip, int(node_port))
@@ -45,6 +46,8 @@ class node:
         Returns a dict with the node info
         Could take a param like verbosity of returned info later.
         """
+        # WARNING: getinfo is deprecated and will be fully removed in 0.16. Projects should transition to using getblockchaininfo, getnetworkinfo, and getwalletinfo before upgrading to 0.16
+        # However we get all info in one go, and it can be cached for subsequent partial info requests from other listed commands.
         try:       
             # TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
             # Moreover, it's not necessary to keep a connection open all the time. Not all commands need one, so it just need to connect on demand if it is not.
@@ -63,7 +66,20 @@ class node:
             info = {"version":self.config.version, "error":str(e)}
                 
         return info
-
+        
+    async def getaccountaddress(self, *args, **kwargs):
+        """(account)
+        Returns the current bitcoin address for receiving payments to this account.
+        If (account) does not exist, it will be created along with an associated new address that will be returned.
+        """
+        try:
+            account = args[1] # 0 is self
+            address = self.wallet.get_account_address(account)
+            # address is a single string.
+            return address
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}                
+        return error
 
     async def getbalance(self, *args, **kwargs):
         """

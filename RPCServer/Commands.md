@@ -8,18 +8,19 @@ I'll edit along the way with what is supported or not (yet)
 ## Accounts
 
 An account roughly represents a user. An account may hold one or several addresses.  
-An account is 2-128 characters long, and may only contains the Base64 Character set.  
+An account is either an empty styring (default account) or 2-128 characters long, and may only contains the Base64 Character set.  
 So, a numeric ID (in decimal or Hex form) is also ok.
 
 ## Implemented
 
 * getinfo - Returns an object containing various state info.  
-  Compatible, plus extra info
+  Compatible, plus extra info.
+
+* getaccountaddress  -  (account)  -  Returns the current bitcoin address for receiving payments to this account.  
+  *If (account) does not exist, it will be created along with an associated new address that will be returned*.  
+  Compatible.
 
 ## Working on
-
-* getaccountaddress  -  (account)  -  Returns the current bitcoin address for receiving payments to this account. *If (account) does not exist, it will be created along with an associated new address that will be returned*.  
-
 
 * getaccount  -  (bitcoinaddress)  -  Returns the account associated with the given address.  
 
