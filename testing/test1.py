@@ -49,6 +49,13 @@ client.request('getaccountaddress','test')
 #--> {"jsonrpc": "2.0", "id": 3, "method": "getaccountaddress", "params": ["test"]}
 #<-- {"result":"myNA1B4xcELE8ENCFBW91b7bx6NqX8jgJ9","error":null,"id":3} (200 OK)
 
+client.request('getaccountaddress','test2')
+
+client.request('getaddressesbyaccount','')
+
+client.request('getnewaddress','')
+client.request('getaddressesbyaccount','')
+
 
 #client.request('getbalance')
 """

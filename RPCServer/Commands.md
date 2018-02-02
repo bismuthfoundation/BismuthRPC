@@ -20,21 +20,40 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   *If (account) does not exist, it will be created along with an associated new address that will be returned*.  
   Compatible.
 
+* getaddressesbyaccount  -  (account)  -  Returns the list of addresses for the given account.  
+
+* getnewaddress  -  (account)  -  Returns a new bitcoin address for receiving payments. If (account) is specified payments received with the address will be credited to (account). 
+
+
 ## Working on
 
 * getaccount  -  (bitcoinaddress)  -  Returns the account associated with the given address.  
-
-* getaddressesbyaccount  -  (account)  -  Returns the list of addresses for the given account.  
 
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
 
 * getreceivedbyaddress  -  (bitcoinaddress) (minconf=1)  -  Returns the amount received by (bitcoinaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.   
 
+* dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
+
+
+## Help Appreciated
+
+Those commands are self contained and should be easy to implement in a safe a independant way.
+I can do it, but it's always nice not to be alone :)
+
+More will come later on.
+
+
+* backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
+
+* dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file 
+
+
+
 ## To be implemented
 
 * help  -  (command)  -  List commands, or get help for a command.
 * stop  -  Stop bitcoin server.
-* getnewaddress  -  (account)  -  Returns a new bitcoin address for receiving payments. If (account) is specified payments received with the address will be credited to (account). 
 * setaccount  -  (bitcoinaddress) (account)  -  Sets the account associated with the given address. Assigning address that is already assigned to the same account will create a new address associated with that account. 
 * getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. If (account) not provided return will include all transactions to all accounts. (version 0.3.24) 
 * listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values. 
@@ -42,9 +61,6 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
 * listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute bitcoind listreceivedbyaddress 0 true
 
-* backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
-* dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
-* dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file 
 * importprivkey  -  (bitcoinprivkey) (label) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
 
 * encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
