@@ -81,6 +81,46 @@ class node:
             error = {"version":self.config.version, "error":str(e)}                
         return error
 
+        
+    async def getnewaddress(self, *args, **kwargs):
+        """(account)
+        Returns a new bitcoin address for receiving payments. 
+        If (account) is specified payments received with the address will be credited to (account). 
+        """
+        try:
+            account = args[1] # 0 is self
+            address = self.wallet.get_new_address(account)
+            # address is a single string.
+            return address
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}                
+        return error
+
+        
+    async def backupwallet(self, *args, **kwargs):
+        """(file_name)
+        Backups the whole wallet directory in then given archive filename
+        """
+        try:
+            file_name = args[1] # 0 is self
+            return self.wallet.backup_wallet(file_name)
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}                
+        return error                
+        
+
+    async def dumpwallet(self, *args, **kwargs):
+        """(file_name)
+        Sends all the priv keys from the wallet
+        """
+        try:
+            file_name = args[1] # 0 is self
+            return self.wallet.dump_wallet()
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}                
+        return error                
+
+
     async def getbalance(self, *args, **kwargs):
         """
         Returns the balance of the whole wallet, or of a specific account
@@ -122,12 +162,11 @@ class node:
 
     async def getaddressesbyaccount(self, *args, **kwargs):
         """
-        List the addresses of the provided account args[0]
+        List the addresses of the provided account args[1]
         """
         try:
-            # mockup
-            getaddressesbyaccount = ["moPhStktszZGwtVjziE7eoQ76ATQqfhMtK","n4aNErEjyafirvMJNCKhFJgBUow9JZnXPk"]
-            return getaddressesbyaccount
+            account = args[1] # 0 is self
+            return self.wallet.get_addresses_by_account(account)
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
 

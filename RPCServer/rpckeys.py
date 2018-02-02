@@ -23,6 +23,7 @@ class key:
     Represent a crypto key object and associated methods
     """
     
+    # TODO: Could add a "label" later on
     __slots__ = ('verbose', 'encrypted', 'privkey', 'pubkey', 'address', 'IV', 'passphrase');
     
     def __init__(self, verbose=False):
@@ -40,6 +41,13 @@ class key:
         The core properties as a dict
         """
         return {"address":self.address, "encrypted":self.encrypted, "privkey":self.privkey, "pubkey":self.pubkey}
+
+    @property
+    def as_list(self):
+        """
+        The core properties as a list
+        """
+        return [self.address, self.encrypted, self.privkey, self.pubkey]
 
 
     def from_dict(self, adict):
@@ -61,6 +69,7 @@ class key:
         TODO: surely we sould strip the RSA header and footer -----BEGIN RSA PRIVATE KEY-----\n
         from the data when encrypting, or this makes it easier to brute force.
         """
+        self.encrypted = False
         self.pubkey = key.publickey().exportKey().decode("utf-8")
         # address is hash of pubkey
         self.address = hashlib.sha224(self.pubkey.encode("utf-8")).hexdigest()
