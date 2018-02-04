@@ -57,7 +57,7 @@ client.request('getnewaddress','')
 client.request('getaddressesbyaccount','')
 
 # Backup the wallet, should create a wallet.zip file in the nodeclient.py directory
-client.request('backupwallet', '/Users/robinvanduiven/Downloads/bis_test/1wallet.zip')
+client.request('backupwallet', 'wallet.zip')
 
 #client.request('getbalance')
 """
