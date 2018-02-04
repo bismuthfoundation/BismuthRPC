@@ -24,6 +24,9 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * getnewaddress  -  (account)  -  Returns a new bitcoin address for receiving payments. If (account) is specified payments received with the address will be credited to (account). 
 
+* backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
+
+
 
 ## Working on
 
@@ -44,8 +47,6 @@ I can do it, but it's always nice not to be alone :)
 More will come later on.
 
 
-* backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
-
 * dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file 
 
 
@@ -62,6 +63,7 @@ More will come later on.
 * listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute bitcoind listreceivedbyaddress 0 true
 
 * importprivkey  -  (bitcoinprivkey) (label) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
+
 
 * encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
   Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
