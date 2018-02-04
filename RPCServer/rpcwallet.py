@@ -12,6 +12,7 @@ import sys
 import os
 import json
 import re
+import zipfile
 
 import rpckeys
 
@@ -167,27 +168,34 @@ class wallet:
         """
         Saves the whole wallet directory in a zip or tgz archive
         """
-        
-        # TODO - Help is welcome.
-        
-        """
-        Wallet is a directory, referenced by self.path
-        This backup shall archive all the files and current structure with only relative path info
-        into an archive file.
-        
-        afilename is the full path and filename of where to save.
 
-        Keep cross os compatibility to mind. The archive has to be readable on both Linux and Win.
-        A Zip archive could be a simple choice.
-        Only use of standard modules, or only lightweight ones would be appreciated.
-        
-        
-        Please have a test setup and make sure code works before requesting PR.
         """
-        
-        print("TODO: Backup Wallet")
-        
-        # Should return True or raise an exception
+            Test possible path existence
+        """
+        backup_path = os.path.dirname(os.path.abspath(afilename))
+
+        if not os.path.exists(backup_path):
+            raise InvalidPath
+
+        """
+            Open a zipfile for writing
+            - afilename is the full path and filename of where to save.
+        """
+        wallet_zip = zipfile.ZipFile(afilename, 'w', zipfile.ZIP_DEFLATED)
+
+        """ 
+            Walk all files and dirs and add to zipfile
+            - self.path is wallet directory 
+        """
+        for root, dirs, files in os.walk(self.path):
+            for file in files:
+                wallet_zip.write(os.path.join(root, file))
+
+        """
+            Close zipfile
+        """
+        wallet_zip.close()
+
         return True
         
         
@@ -225,6 +233,11 @@ Custom exceptions
 class InvalidAccountName(Exception):
     code = -33001
     message = 'Invalid Account Name'
+    data = None
+
+class InvalidPath(Exception):
+    code = -33002
+    message = 'Path does not exist'
     data = None
 
 
