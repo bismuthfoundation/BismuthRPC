@@ -9,15 +9,19 @@ Also handles wallet and accounts
 """
 
 # Generic modules
-import socket
+import socket, sys
+
 
 # Bismuth specific modules
 import rpcconnections, rpcwallet
+from ttlcache import asyncttlcache
+
 """
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
+
 
 class node:    
     """
@@ -40,7 +44,23 @@ class node:
     """
     All json-rpc calls are directly mapped to async methods here thereafter:
     """
+    
+    def stop(self, *args, **kwargs):
+        """Clean stop the server"""
+        print("Stopping Server");
+        rpcconnections.close(self.s)
+        # TODO: Close possible open files and db connection
+        
+        # TODO: Signal possible threads to terminate and wait.
+        return True
+        
+        # NOT So simple. Have to signal tornado app to close (and not leave the port open) see 
+        # https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server
+        # https://gist.github.com/wonderbeyond/d38cd85243befe863cdde54b84505784
+        #sys.exit()
  
+ 
+    @asyncttlcache(ttl=10)
     async def getinfo(self, *args, **kwargs):
         """
         Returns a dict with the node info
@@ -66,7 +86,26 @@ class node:
             info = {"version":self.config.version, "error":str(e)}
                 
         return info
-        
+
+
+    async def getblocknumber(self, *args, **kwargs):
+        """
+        Deprecated. Removed in version 0.7. Use getblockcount. 
+        Returns the number of blocks in the longest block chain. 
+        """
+        info = await self.getinfo()
+        return info['blocks']
+
+
+    # No need to cache since it's using cached getinfo()
+    async def getblockcount(self, *args, **kwargs):
+        """
+        Returns the number of blocks in the longest block chain. 
+        """
+        info = await self.getinfo()
+        return info['blocks']
+
+
     async def getaccountaddress(self, *args, **kwargs):
         """(account)
         Returns the current bitcoin address for receiving payments to this account.
