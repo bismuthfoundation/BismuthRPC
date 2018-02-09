@@ -28,18 +28,15 @@ class node:
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
     
-    __slots__ = ("config", "wallet", "s", "node_ipport");
+    __slots__ = ("config", "wallet", "s", "connection");
     
     def __init__(self, config):
         self.config = config
         self.wallet = rpcwallet.wallet(verbose=config.verbose)
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
-        self.node_ipport = (node_ip, int(node_port))
-        if self.config.verbose:
-            print("Connecting to",self.node_ipport)
-        self.s = socket.socket()
-        self.s.connect(self.node_ipport)
+        self.connection = rpcconnections.connection((node_ip, int(node_port)), verbose=config.verbose)
+
  
     """
     All json-rpc calls are directly mapped to async methods here thereafter:
@@ -48,7 +45,7 @@ class node:
     def stop(self, *args, **kwargs):
         """Clean stop the server"""
         print("Stopping Server");
-        rpcconnections.close(self.s)
+        self.connection.close(self.s)
         # TODO: Close possible open files and db connection
         
         # TODO: Signal possible threads to terminate and wait.
@@ -71,8 +68,7 @@ class node:
         try:       
             # TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
             # Moreover, it's not necessary to keep a connection open all the time. Not all commands need one, so it just need to connect on demand if it is not.
-            rpcconnections.send(self.s, "statusjson")
-            info = rpcconnections.receive(self.s)
+            info = self.connection.command("statusjson")
             """
             info = {"version":self.config.version, "protocolversion":"mainnet0016", "walletversion":data[7], "testnet":False, # config data
                     "balance":10.00, "blocks":data[5], "timeoffset":0, "connections":data[1], "difficulty":109.65, # live status
