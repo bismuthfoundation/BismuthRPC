@@ -13,6 +13,8 @@ import os
 import json
 import re
 import zipfile
+import datetime
+import io
 
 import rpckeys
 
@@ -48,8 +50,7 @@ class wallet:
         self.load()
         if self.verbose:
             print(self.index)
-                
-                
+
     def load(self):
         """
         Loads the current wallet state or init if the dir is empty.
@@ -199,31 +200,60 @@ class wallet:
         return True
         
         
-    def dump_wallet(self):
+    def dump_wallet(self, afilename="dump.txt", version='n/a'):
         """
         Sends back a list of all privkeys for the wallet.
         """
-        
-        # TODO - Help is welcome.
-        
         """
-        Wallet is a directory, referenced by self.path
-        each account is a json file, within a directory that is 2 chars long.
-        account abcdef is abcedf.json and lies in dir "ab"
-        
-        This dump has to parse all wallet json files (including "default.json" right in .wallet)
-        For each wallet, parse the "addresses" list and build the list of all addresses.
-        (ony Bismuth addresses, not the full priv/pub list)
-        
-        Please have a test setup and make sure code works before requesting PR.
+            Test possible path existence
         """
-        
-        print("TODO: Dump Wallet")
-        
-        # Should return a list of string or raise an exception
-        return ['TODO']        
+        dump_path = os.path.dirname(os.path.abspath(afilename))
 
+        if not os.path.exists(dump_path):
+            raise InvalidPath
 
+        if not os.path.exists(afilename):
+            if self.verbose:
+                print(afilename, "does not exist, creating")
+
+        with open(afilename, 'w') as outfile:
+            """ Write basic output """
+            outfile.write("# Wallet dump created by bismuthd {} \n".format(version))
+            outfile.write("# * Created on {} \n".format(datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
+            if self.encrypted:
+                outfile.write('# * Wallet is Encrypted\n')
+            else:
+                outfile.write('# * Wallet is Unencrypted\n')
+
+            """ @TODO add block information like:
+                # * Best block at time of backup was 227221 (0000000026ede4c10594af8087748507fb06dcd30b8f4f48b9cc463cabc9d767),
+                #   mined on 2014-04-29T21:15:07Z
+            """
+            """ Walk all files, search for keys and parse them """
+            for root, dirs, files in os.walk(self.path):
+                for file in files:
+                    """ check if this is a json file """
+                    ext = os.path.splitext(file)[-1].lower()
+                    if ext != ".json":
+                        continue
+
+                    with io.open(os.path.join(root,file), 'r', encoding='utf-8-sig') as json_file:
+                        try:
+                            json_contents = json_file.read()
+                            res = json.loads(json_contents)
+
+                            account = os.path.splitext(file)[0]
+                            if 'addresses' in res:
+                                for address in res["addresses"]:
+                                    """
+                                        Output format:
+                                        privkey1 RESERVED account=account1 addr=address1
+                                        - RESERVED is for timestamp later
+                                    """
+                                    outfile.write("{} RESERVED account={} addr={}\n".format(address[2], account, address[0]))
+                        except ValueError:
+                            return None
+        return None
 
 
 """

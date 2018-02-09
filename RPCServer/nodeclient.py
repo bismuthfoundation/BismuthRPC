@@ -150,7 +150,7 @@ class node:
         """
         try:
             file_name = args[1] # 0 is self
-            return self.wallet.dump_wallet()
+            return self.wallet.dump_wallet(file_name, self.config.version)
         except Exception as e:
             error = {"version":self.config.version, "error":str(e)}                
         return error                

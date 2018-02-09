@@ -69,6 +69,8 @@ client.request('getaddressesbyaccount','')
 client.request('getaddressesbyaccount','')
 
 
+# Dump the wallet keys, should create a wallet_dump.txt file in the nodeclient.py directory
+client.request('dumpwallet', 'wallet_dump.txt')
 #client.request('getbalance')
 """
 {"result":99.99996160,"error":null,"id":2}
