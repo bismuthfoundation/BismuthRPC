@@ -14,7 +14,10 @@ LTIMEOUT = 45
 SLEN = 10
 
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
+
+
+# TODO: make that a class instead and handle auto reconnect when needed
 
 
 def send(sdef, data, slen=SLEN):
@@ -52,3 +55,9 @@ def receive(sdef, slen=SLEN):
         """
         raise RuntimeError("Connections: {}".format(e))
 
+
+def close(sdef):
+    try:
+        sdef.close()
+    except:
+        pass

@@ -5,6 +5,8 @@
 Test and dev json-rpc client 
 """
 
+import time
+
 # http://jsonrpcclient.readthedocs.io/en/latest/api.html
 import jsonrpcclient
 from jsonrpcclient.http_client import HTTPClient
@@ -40,6 +42,16 @@ client.request('getinfo')
 # or : client.send('{"method": "getinfo","params":[],"id":1,"jsonrpc":"2.0"}')
 # WARNING: getinfo is deprecated and will be fully removed in 0.16. Projects should transition to using getblockchaininfo, getnetworkinfo, and getwalletinfo before upgrading to 0.16
 
+# This one should be cached
+client.request('getinfo')
+
+client.request('getblockcount')
+
+
+#time.sleep(11)
+# but not this one
+#client.request('getinfo')
+
 client.request('getaccountaddress','')
 #--> {"jsonrpc": "2.0", "id": 2, "method": "getaccountaddress", "params": [""]}
 #<-- {"result":"n3pJ864fXxWvixHTUrbW3e3DyoJGsUEQtL","error":null,"id":2} (200 OK)
@@ -53,7 +65,7 @@ client.request('getaccountaddress','test2')
 
 client.request('getaddressesbyaccount','')
 
-client.request('getnewaddress','')
+#client.request('getnewaddress','')
 client.request('getaddressesbyaccount','')
 
 

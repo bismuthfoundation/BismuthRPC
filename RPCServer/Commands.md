@@ -26,9 +26,13 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
 
+* getblocknumber  -   * Deprecated. Removed in version 0.7. Use getblockcount. 
 
+* getblockcount  -   * Returns the number of blocks in the longest block chain. 
 
 ## Working on
+
+* stop  -  Stop bitcoin server.
 
 * getaccount  -  (bitcoinaddress)  -  Returns the account associated with the given address.  
 
@@ -38,8 +42,20 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
 
+* getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
+* getblock  -  (hash)  -  Returns information about the block with the given hash. 
+* getblockhash  -  (index)  -  Returns hash of block in best-block-chain at (index); index 0 is the genesis block 
+* getconnectioncount  -   * Returns the number of connections to other nodes. 
+* getpeerinfo  -   * version 0.7 Returns data about each connected node. 
+* getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
+* getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
 
-## Help Appreciated
+See also new commands:
+
+getblockchaininfo, getnetworkinfo, and getwalletinfo
+
+
+## Help Appreciated
 
 Those commands are self contained and should be easy to implement in a safe a independant way.
 I can do it, but it's always nice not to be alone :)
@@ -54,7 +70,6 @@ More will come later on.
 ## To be implemented
 
 * help  -  (command)  -  List commands, or get help for a command.
-* stop  -  Stop bitcoin server.
 * setaccount  -  (bitcoinaddress) (account)  -  Sets the account associated with the given address. Assigning address that is already assigned to the same account will create a new address associated with that account. 
 * getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. If (account) not provided return will include all transactions to all accounts. (version 0.3.24) 
 * listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values. 
@@ -64,6 +79,9 @@ More will come later on.
 
 * importprivkey  -  (bitcoinprivkey) (label) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
 
+
+The 4 following commands are to be coded in one go by the same person.
+See rpckeys.py and try_keys.py for the encryption/decryption logic.
 
 * encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
   Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
@@ -89,17 +107,6 @@ More will come later on.
 
 * signmessage  -  (bitcoinaddress) (message)  -  Sign a message with the private key of an address. 
 * verifymessage  -  (bitcoinaddress) (signature) (message)  -  Verify a signed message. 
-
-* getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
-* getblock  -  (hash)  -  Returns information about the block with the given hash. 
-* getblocknumber  -   * Deprecated. Removed in version 0.7. Use getblockcount. 
-* getblockcount  -   * Returns the number of blocks in the longest block chain. 
-* getblockhash  -  (index)  -  Returns hash of block in best-block-chain at (index); index 0 is the genesis block 
-* getconnectioncount  -   * Returns the number of connections to other nodes. 
-* getpeerinfo  -   * version 0.7 Returns data about each connected node. 
-* getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
-* getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
-
 
 
 ## Undecided
