@@ -51,14 +51,6 @@ class wallet:
         if self.verbose:
             print(self.index)
 
-
-    def _is_json(self, json_string):
-      try:
-        unused_json_object = json.loads(json_string)
-      except ValueError:
-        return False
-      return True
-
     def load(self):
         """
         Loads the current wallet state or init if the dir is empty.
@@ -226,8 +218,8 @@ class wallet:
 
         with open(afilename, 'w') as outfile:
             """ Write basic output """
-            outfile.write('# Wallet dump created by bismuthd ' + version + '\n')
-            outfile.write('# * Created on ' + datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ') + '\n')
+            outfile.write("# Wallet dump created by bismuthd {} \n".format(version))
+            outfile.write("# * Created on {} \n".format(datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
             if self.encrypted:
                 outfile.write('# * Wallet is Encrypted\n')
             else:
@@ -240,13 +232,17 @@ class wallet:
             """ Walk all files, search for keys and parse them """
             for root, dirs, files in os.walk(self.path):
                 for file in files:
-                    with io.open(os.path.join(root,file), 'r', encoding='utf-8-sig') as json_file:
-                        """ check if this is a json file """
-                        json_contents = json_file.read()
-                        if self._is_json(json_contents):
-                            res = json.loads(json_contents)
-                            account = os.path.splitext(file)[0]
+                    """ check if this is a json file """
+                    ext = os.path.splitext(file)[-1].lower()
+                    if ext != ".json":
+                        continue
 
+                    with io.open(os.path.join(root,file), 'r', encoding='utf-8-sig') as json_file:
+                        try:
+                            json_contents = json_file.read()
+                            res = json.loads(json_contents)
+
+                            account = os.path.splitext(file)[0]
                             if 'addresses' in res:
                                 for address in res["addresses"]:
                                     """
@@ -254,8 +250,10 @@ class wallet:
                                         privkey1 RESERVED account=account1 addr=address1
                                         - RESERVED is for timestamp later
                                     """
-                                    outfile.write(address[2] + ' RESERVED ' + 'account=' + account + ' addr=' + address[0] + '\n')
-        return True
+                                    outfile.write("{} RESERVED account={} addr={}\n".format(address[2], account, address[0]))
+                        except ValueError:
+                            return None
+        return None
 
 
 """
