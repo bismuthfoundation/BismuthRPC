@@ -22,6 +22,9 @@ import rpckeys
 __version__ = "0.0.3"
 
 
+
+
+
 # TODO: maintain an inverted index of address:account and a re-index method.
 
 class wallet:    
@@ -52,6 +55,7 @@ class wallet:
         self.load()
         if self.verbose:
             print(self.index)
+        #self.reindex()
 
 
     def load(self):
@@ -70,8 +74,7 @@ class wallet:
                     json.dump(self.index, outfile)
                 # Inverted index
                 self.address_to_account = {}
-                with open(rindex_fname, 'w') as outfile:  
-                    json.dump(self.address_to_account, outfile)
+                self._save_rindex()
         else:
             with open(index_fname) as json_file:  
                 self.index = json.load(json_file)
@@ -80,14 +83,59 @@ class wallet:
                     self.address_to_account = json.load(json_file)
             except:
                 self.address_to_account = {}
+
+
+    def _parse_accounts(self):
+        """
+        A generator that yields the accounts of the current wallet
+        """
+        # Walk all files, search for keys and parse them
+        for root, dirs, files in os.walk(self.path):
+            for afile in files:
+                # check if this is a json file
+                ext = os.path.splitext(afile)[-1].lower()
+                if ext != ".json":
+                    continue
+                # Avoid the indexes
+                if afile.lower() in ('index.json','rindex.json') :
+                    continue
+                # io is used here to avoid cross platform issues with UTF-8 BOM.
+                with io.open(os.path.join(root,afile), 'r', encoding='utf-8-sig') as json_file:
+                    try:
+                        json_contents = json_file.read()
+                        res = json.loads(json_contents)
+                        account = os.path.splitext(afile)[0]
+                        yield (account, res)
+                    except Exception as e:
+                        if self.verbose:
+                            print("Possible error {} on file {}".format(e, afile))
                 
                 
     def reindex(self):
         """
         Regenerates the inverted index self.address_to_account (rindex.json)
         """
-        
+        if self.verbose:
+            print("Reindexing wallet - can take some time")
         # WIP
+        self.address_to_account = {}
+        for account_name, account_details in self._parse_accounts():
+            try:
+                for address in account_details['addresses']:
+                    self.address_to_account[address[0]] = account_name
+            except:
+                pass
+        self._save_rindex()
+        return True
+
+
+    def _save_rindex(self):
+        """
+        Sync our reverse index to file
+        """
+        rindex_fname = self.path+'/rindex.json'
+        with open(rindex_fname, 'w') as outfile:  
+            json.dump(self.address_to_account, outfile)
 
 
     def _check_account_name(self, account=""):
