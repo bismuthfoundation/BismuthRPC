@@ -235,4 +235,16 @@ class node:
             return {"version":self.config.version, "error":str(e)}
         
         
-        
+    """
+    Here comes extra commands, that are *not* bitcoind compatible
+    """   
+
+    async def reindexwallet(self, *args, **kwargs):
+        """
+        Force a reindex of the wallet accounts and addresses
+        """
+        try:
+            return self.wallet.reindex(account)
+        except Exception as e:
+            return {"version":self.config.version, "error":str(e)}
+    
