@@ -17,7 +17,8 @@ jsonrpcclient.config.validate = False
 #client = HTTPClient('http://username:password@127.0.0.1:18332/')
 
 # The test bismuthd.py server
-client = HTTPClient('http://username:password@127.0.0.1:8115/')
+#client = HTTPClient('http://username:password@127.0.0.1:8115/')
+client = HTTPClient('http://username:password@192.168.1.176:8115/')
 
 
 # For json-rpc over SSL
@@ -71,6 +72,7 @@ client.request('getaddressesbyaccount','')
 
 # Dump the wallet keys, should create a wallet_dump.txt file in the nodeclient.py directory
 client.request('dumpwallet', 'wallet_dump.txt')
+
 #client.request('getbalance')
 """
 {"result":99.99996160,"error":null,"id":2}

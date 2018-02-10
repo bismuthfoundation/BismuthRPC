@@ -97,12 +97,15 @@ See rpckeys.py and try_keys.py for the encryption/decryption logic.
 * sendfrom  -  (fromaccount) (tobitcoinaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object). 
 * sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers 
 * sendtoaddress  -  (bitcoinaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful. 
+
 * gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"
+
 * gettxout  -  (txid) (n) (includemempool=true)  -  Returns details about an unspent transaction output (UTXO) 
 * gettxoutsetinfo  -   * Returns statistics about the unspent transaction output (UTXO) set 
 * listsinceblock  -  (blockhash) (target-confirmations)  -  Get all transactions in blocks since block (blockhash), or all transactions if omitted. (target-confirmations) intentionally does not affect the list of returned transactions, but only affects the returned "lastblock" value.(1) 
 * listtransactions  -  (account) (count=10) (from=0)  -  Returns up to (count) most recent transactions skipping the first (from) transactions for account (account). If (account) not provided it'll return recent transactions from all accounts.
 * listunspent  -  (minconf=1) (maxconf=999999)  -  version 0.7 Returns array of unspent transaction inputs in the wallet. 
+
 * validateaddress  -  (bitcoinaddress)  -  Return information about (bitcoinaddress). 
 
 * signmessage  -  (bitcoinaddress) (message)  -  Sign a message with the private key of an address. 
