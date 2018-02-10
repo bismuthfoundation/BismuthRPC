@@ -6,6 +6,7 @@ Wallet class for Bismuth RJson-RPC Server
 
 @EggPool
 
+Thanks to @rvanduiven
 """
 
 import sys
@@ -18,7 +19,7 @@ import io
 
 import rpckeys
 
-__version__ = "0.0.1"
+__version__ = "0.0.3"
 
 
 # TODO: maintain an inverted index of address:account and a re-index method.
@@ -31,7 +32,8 @@ class wallet:
     # Warning: make sure this is thread safe as it will be called from multiple threads. Use queues and locks when needed.
     # TODO
     
-    __slots__ = ('path', 'verbose', 'encrypted', 'locked', 'passphrase', 'IV','index', 'key');
+    __slots__ = ('path', 'verbose', 'encrypted', 'locked', 'passphrase', 'IV','index', 'key', 'address_to_account');
+    # TODO: those properties should be converted to _protected later on.
     
     def __init__(self, path='.wallet', verbose=False):
         self.path = path
@@ -39,8 +41,8 @@ class wallet:
         self.encrypted = False
         self.locked = False
         self.passphrase = ''
-        self.IV = 16 * '\x00'
         self.index = None
+        self.IV = 16 * '\x00'
         if not os.path.exists(path):
             if self.verbose:
                 print(path,"does not exist, creating")
@@ -51,12 +53,14 @@ class wallet:
         if self.verbose:
             print(self.index)
 
+
     def load(self):
         """
         Loads the current wallet state or init if the dir is empty.
         """
         # At this point the dir exists.
         index_fname = self.path+'/index.json'
+        rindex_fname = self.path+'/rindex.json'
         if not os.path.exists(index_fname):
             if self.verbose:
                 print(index_fname,"does not exist, creating default")
@@ -64,10 +68,27 @@ class wallet:
                 self.index = {"version": __version__, "encrypted":False}
                 with open(index_fname, 'w') as outfile:  
                     json.dump(self.index, outfile)
+                # Inverted index
+                self.address_to_account = {}
+                with open(rindex_fname, 'w') as outfile:  
+                    json.dump(self.address_to_account, outfile)
         else:
             with open(index_fname) as json_file:  
                 self.index = json.load(json_file)
+            try:
+                with open(rindex_fname) as json_file:  
+                    self.address_to_account = json.load(json_file)
+            except:
+                self.address_to_account = {}
                 
+                
+    def reindex(self):
+        """
+        Regenerates the inverted index self.address_to_account (rindex.json)
+        """
+        
+        # WIP
+
 
     def _check_account_name(self, account=""):
         """
@@ -169,34 +190,17 @@ class wallet:
         """
         Saves the whole wallet directory in a zip or tgz archive
         """
-
-        """
-            Test possible path existence
-        """
+        # Test possible path existence
         backup_path = os.path.dirname(os.path.abspath(afilename))
-
         if not os.path.exists(backup_path):
             raise InvalidPath
-
-        """
-            Open a zipfile for writing
-            - afilename is the full path and filename of where to save.
-        """
+        # Open a zipfile for writing - afilename is the full path and filename of where to save.
         wallet_zip = zipfile.ZipFile(afilename, 'w', zipfile.ZIP_DEFLATED)
-
-        """ 
-            Walk all files and dirs and add to zipfile
-            - self.path is wallet directory 
-        """
+        # Walk all files and dirs and add to zipfile - self.path is wallet directory 
         for root, dirs, files in os.walk(self.path):
             for file in files:
                 wallet_zip.write(os.path.join(root, file))
-
-        """
-            Close zipfile
-        """
         wallet_zip.close()
-
         return True
         
         
@@ -204,20 +208,15 @@ class wallet:
         """
         Sends back a list of all privkeys for the wallet.
         """
-        """
-            Test possible path existence
-        """
+        # Test possible path existence
         dump_path = os.path.dirname(os.path.abspath(afilename))
-
         if not os.path.exists(dump_path):
             raise InvalidPath
-
         if not os.path.exists(afilename):
             if self.verbose:
                 print(afilename, "does not exist, creating")
-
         with open(afilename, 'w') as outfile:
-            """ Write basic output """
+            # Write basic output
             outfile.write("# Wallet dump created by bismuthd {} \n".format(version))
             outfile.write("# * Created on {} \n".format(datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
             if self.encrypted:
@@ -229,20 +228,26 @@ class wallet:
                 # * Best block at time of backup was 227221 (0000000026ede4c10594af8087748507fb06dcd30b8f4f48b9cc463cabc9d767),
                 #   mined on 2014-04-29T21:15:07Z
             """
-            """ Walk all files, search for keys and parse them """
+            
+            # TODO: since this will be used in other functions, use a generator to get all account files.
+            
+            # Walk all files, search for keys and parse them
             for root, dirs, files in os.walk(self.path):
-                for file in files:
-                    """ check if this is a json file """
-                    ext = os.path.splitext(file)[-1].lower()
+                for afile in files:
+                    # check if this is a json file
+                    ext = os.path.splitext(afile)[-1].lower()
                     if ext != ".json":
                         continue
-
-                    with io.open(os.path.join(root,file), 'r', encoding='utf-8-sig') as json_file:
+                    # Avoid the indexes
+                    if afile.lower() in ('index.json','rindex.json') :
+                        continue
+                    # io is used here to avoid cross platform issues with UTF-8 BOM.
+                    with io.open(os.path.join(root,afile), 'r', encoding='utf-8-sig') as json_file:
                         try:
                             json_contents = json_file.read()
                             res = json.loads(json_contents)
 
-                            account = os.path.splitext(file)[0]
+                            account = os.path.splitext(afile)[0]
                             if 'addresses' in res:
                                 for address in res["addresses"]:
                                     """
@@ -250,7 +255,7 @@ class wallet:
                                         privkey1 RESERVED account=account1 addr=address1
                                         - RESERVED is for timestamp later
                                     """
-                                    outfile.write("{} RESERVED account={} addr={}\n".format(address[2], account, address[0]))
+                                    outfile.write("{} RESERVED account={} addr={}\n".format(address[2].replace('\n','').replace('\r',''), account, address[0]))
                         except ValueError:
                             return None
         return None
@@ -262,7 +267,7 @@ Custom exceptions
 
 class InvalidAccountName(Exception):
     code = -33001
-    message = 'Invalid Account Name'
+    message = 'Invalid Account Name - 2 to 128 chars from b64 charset only.'
     data = None
 
 class InvalidPath(Exception):

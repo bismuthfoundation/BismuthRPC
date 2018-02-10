@@ -89,8 +89,8 @@ class node:
         Deprecated. Removed in version 0.7. Use getblockcount. 
         Returns the number of blocks in the longest block chain. 
         """
-        info = await self.getinfo()
-        return info['blocks']
+        info = await self.getblockcount()
+        return info
 
 
     # No need to cache since it's using cached getinfo()
@@ -99,7 +99,12 @@ class node:
         Returns the number of blocks in the longest block chain. 
         """
         info = await self.getinfo()
-        return info['blocks']
+        try:
+            blocks = info['blocks']
+            return blocks
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}
+            return error
 
 
     async def getaccountaddress(self, *args, **kwargs):

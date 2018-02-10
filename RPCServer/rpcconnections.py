@@ -49,7 +49,9 @@ class connection(object):
         try:
             self.sdef.settimeout(LTIMEOUT)
             # Make sure the packet is sent in one call
-            self.sdef.sendall(str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen)+str(json.dumps(data)).encode("utf-8"))
+            res = self.sdef.sendall(str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen)+str(json.dumps(data)).encode("utf-8"))
+            if self.verbose:
+                print("send ", data, "sent",res)
             return True
         except Exception as E:
             # send failed, try to reconnect
@@ -105,8 +107,18 @@ class connection(object):
 
     def command(self,command):
         """Sends a command and return it's raw result"""
-        self.send(command)
-        return self.receive()
+        try:
+            self.send(command)
+            ret = self.receive()
+            return ret
+        except:
+            # TODO : better handling of tries and delay between
+            if self.verbose:
+                print("Command failed, trying to reconnect")
+            self.check_connection()
+            self.send(command)
+            ret = self.receive()
+            return ret
 
 
     def close(self):
