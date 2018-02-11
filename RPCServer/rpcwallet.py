@@ -9,7 +9,7 @@ Wallet class for Bismuth RJson-RPC Server
 Thanks to @rvanduiven
 """
 
-import sys
+#import sys
 import os
 import json
 import re
@@ -30,7 +30,7 @@ class Wallet:
     # Warning: make sure this is thread safe as it will be called from multiple threads. Use queues and locks when needed.
     # TODO
     
-    __slots__ = ('path', 'verbose', 'encrypted', 'locked', 'passphrase', 'IV','index', 'key', 'address_to_account');
+    __slots__ = ('path', 'verbose', 'encrypted', 'locked', 'passphrase', 'IV','index', 'key', 'address_to_account')
     # TODO: those properties should be converted to _protected later on.
     
     def __init__(self, path='.wallet', verbose=False):
@@ -163,17 +163,17 @@ class Wallet:
         if not os.path.isfile(fname):
             if self.verbose:
                 print(fname,"does not exist, creating default")
-                # Default account file
-                self.key.generate() # This takes some time.
-                res = {"encrypted":False, "addresses":[self.key.as_list]}
-                # and save account
-                if not os.path.exists(path):
-                    os.mkdir(path)
-                with open(fname, 'w') as outfile:  
-                    json.dump(res, outfile)
-                # update reverse index
-                self.address_to_account[self.key.address] = account
-                self._save_rindex()
+            # Default account file
+            self.key.generate() # This takes some time.
+            res = {"encrypted":False, "addresses":[self.key.as_list]}
+            # and save account
+            if not os.path.exists(path):
+                os.mkdir(path)
+            with open(fname, 'w') as outfile:
+                json.dump(res, outfile)
+            # update reverse index
+            self.address_to_account[self.key.address] = account
+            self._save_rindex()
         else:
             with open(fname) as json_file:  
                 res = json.load(json_file)

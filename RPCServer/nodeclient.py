@@ -9,7 +9,7 @@ Also handles wallet and accounts
 """
 
 # Generic modules
-import socket, sys
+#import socket, sys
 
 
 # Bismuth specific modules
@@ -29,7 +29,7 @@ class Node:
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
     
-    __slots__ = ("config", "wallet", "s", "connection");
+    __slots__ = ("config", "wallet", "s", "connection")
     
     def __init__(self, config):
         self.config = config
@@ -46,7 +46,7 @@ class Node:
     
     def stop(self, *args, **kwargs):
         """Clean stop the server"""
-        print("Stopping Server");
+        print("Stopping Server")
         self.connection.close(self.s)
         # TODO: Close possible open files and db connection
         

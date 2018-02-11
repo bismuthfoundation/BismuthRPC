@@ -15,7 +15,6 @@ class Get:
     def __init__(self):
         self.verbose = 0
         self.rpcport = 8115
-        return self.read()
  
     def load_file(self,filename):
         print("Loading",filename)
