@@ -34,21 +34,23 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * getblockcount  -   * Returns the number of blocks in the longest block chain. 
 
+* getblockhash  -  (index)  -  Returns hash of block in best-block-chain at (index); index 0 is the genesis block 
+
+* getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
+
+
 ## Working on
 
 * stop  -  Stop bitcoin server.
+* getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
 
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
-
 * getreceivedbyaddress  -  (bitcoinaddress) (minconf=1)  -  Returns the amount received by (bitcoinaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.   
 
 * getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
 * getblock  -  (hash)  -  Returns information about the block with the given hash. 
-* getblockhash  -  (index)  -  Returns hash of block in best-block-chain at (index); index 0 is the genesis block 
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
 * getpeerinfo  -   * version 0.7 Returns data about each connected node. 
-* getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
-* getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
 
 See also new commands:
 
