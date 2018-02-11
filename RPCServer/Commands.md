@@ -39,22 +39,36 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
 
 
+## Specific Bismuthd commands
+
+These commands are not known nor used by bitcoind
+
+* rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
+
+
 ## Working on
 
 * stop  -  Stop bitcoin server.
 * getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
 
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
-* getreceivedbyaddress  -  (bitcoinaddress) (minconf=1)  -  Returns the amount received by (bitcoinaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.   
+* getreceivedbyaddress  -  (bitcoinaddress) (minconf=1)  -  Returns the amount received by (bitcoinaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.  
+  Needs a new node command. TODO: suggest api_* commands and module to node.py and matching rights management.   
 
 * getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
 * getblock  -  (hash)  -  Returns information about the block with the given hash. 
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
-* getpeerinfo  -   * version 0.7 Returns data about each connected node. 
+
+* getpeerinfo  -   * version 0.7 Returns data about each connected node.  
+  See https://bitcoin.org/en/developer-reference#getpeerinfo  
+   This will need some adjustments and a new command on node.py
 
 See also new commands:
 
-getblockchaininfo, getnetworkinfo, and getwalletinfo
+* getblockchaininfo https://bitcoin.org/en/developer-reference#getblockchaininfo  
+  Will need some adjustments, see what is coherent in the data
+* getnetworkinfo https://bitcoin.org/en/developer-reference#getnetworkinfo
+* getwalletinfo https://bitcoin.org/en/developer-reference#getwalletinfo
 
 
 ## Help Appreciated
@@ -68,18 +82,16 @@ More will come later on.
 * dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file 
 
 
-
 ## To be implemented
 
 * help  -  (command)  -  List commands, or get help for a command.
-* setaccount  -  (bitcoinaddress) (account)  -  Sets the account associated with the given address. Assigning address that is already assigned to the same account will create a new address associated with that account. 
+
 * getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. If (account) not provided return will include all transactions to all accounts. (version 0.3.24) 
 * listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values. 
-* listaddressgroupings  -   * version 0.7 Returns all addresses in the wallet and info used for coincontrol. 
 * listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
 * listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute bitcoind listreceivedbyaddress 0 true
 
-* importprivkey  -  (bitcoinprivkey) (label) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
+* importprivkey  -  (bitcoinprivkey) (account) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
 
 
 The 4 following commands are to be coded in one go by the same person.
@@ -108,7 +120,7 @@ See rpckeys.py and try_keys.py for the encryption/decryption logic.
 * listtransactions  -  (account) (count=10) (from=0)  -  Returns up to (count) most recent transactions skipping the first (from) transactions for account (account). If (account) not provided it'll return recent transactions from all accounts.
 * listunspent  -  (minconf=1) (maxconf=999999)  -  version 0.7 Returns array of unspent transaction inputs in the wallet. 
 
-* validateaddress  -  (bitcoinaddress)  -  Return information about (bitcoinaddress). 
+* validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
 
 * signmessage  -  (bitcoinaddress) (message)  -  Sign a message with the private key of an address. 
 * verifymessage  -  (bitcoinaddress) (signature) (message)  -  Verify a signed message. 
@@ -138,6 +150,12 @@ See rpckeys.py and try_keys.py for the encryption/decryption logic.
 * move  -  (fromaccount) (toaccount) (amount) (minconf=1) (comment)  -  Move from one account in your wallet to another 
 
 ## Won't implement
+
+* setaccount  -  (bitcoinaddress) (account)  -  Sets the account associated with the given address. Assigning address that is already assigned to the same account will create a new address associated with that account.
+  Deprecated 
+
+* listaddressgroupings  -   * version 0.7 Returns all addresses in the wallet and info used for coincontrol. 
+  https://bitcoin.org/en/developer-reference#listaddressgroupings
 
 These commands may have no sense in the Bismuth context.
 

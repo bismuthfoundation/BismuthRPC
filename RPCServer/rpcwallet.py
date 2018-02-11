@@ -131,6 +131,7 @@ class Wallet:
         Sync our reverse index to file
         """
         rindex_fname = self.path+'/rindex.json'
+        # TODO: Lock
         with open(rindex_fname, 'w') as outfile:  
             json.dump(self.address_to_account, outfile)
 
