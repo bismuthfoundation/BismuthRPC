@@ -14,11 +14,10 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
-
-class key:    
+class Key:
     """
     Represent a crypto key object and associated methods
     """
@@ -49,7 +48,6 @@ class key:
         """
         return [self.address, self.encrypted, self.privkey, self.pubkey]
 
-
     def from_dict(self, adict):
         """
         load Keys from the dict, returns self so we can chain if needed
@@ -57,9 +55,8 @@ class key:
         for key, value in adict.values():
             self.key = value
         return self
-        
 
-    def generate(self):         
+    def generate(self):
         """
         Generates key pair as well as address, uncrypted
         """
@@ -74,8 +71,7 @@ class key:
         # address is hash of pubkey
         self.address = hashlib.sha224(self.pubkey.encode("utf-8")).hexdigest()
         return self.as_dict
-        
-    
+
     def crypt(self, IV='', passphrase=''):
         """
         Encodes privkey only with IV and passphrase
@@ -98,9 +94,7 @@ class key:
         print("clear",self.privkey,"*",len(self.privkey))
         self.privkey  = encryptor.encrypt(self.privkey)
         self.encrypted = True
-        
         return self.as_dict
-
 
     def decrypt(self, IV='', passphrase=''):
         """
@@ -121,30 +115,26 @@ class key:
         # TODO: reinject header/footer
         self.privkey  = decryptor.decrypt(self.privkey).strip()
         self.encrypted = False
-        
         return self.as_dict
-         
-         
-         
-         
-         
-
 
 
 """
 Custom exceptions
 """
 
+
 class AlreadyEncrypted(Exception):
     code = -32001
     message = 'Key is already encrypted'
     data = None
 
+
 class AlreadyDecrypted(Exception):
     code = -32002
     message = 'Key is already decrypted'
     data = None
-    
+
+
 class NoCryptCredentials(Exception):
     code = -32003
     message = 'Crypt credentials required'

@@ -17,13 +17,12 @@ import zipfile
 import datetime
 import io
 
-import rpckeys
+from rpckeys import Key
 
 __version__ = "0.0.3"
 
 
-
-class wallet:    
+class Wallet:
     """
     Handles a .wallet directory, with accounts, addresses, keys and wallet encryption/backup.
     Content is stored as json, within several dir to limit the files in each directory
@@ -41,13 +40,14 @@ class wallet:
         self.locked = False
         self.passphrase = ''
         self.index = None
+        self.address_to_account = {}
         self.IV = 16 * '\x00'
         if not os.path.exists(path):
             if self.verbose:
                 print(path,"does not exist, creating")
                 os.mkdir(path)
         # Since keys will be used everywhere, let's have our instance ready to run.
-        self.key = rpckeys.key(verbose=verbose)
+        self.key = Key(verbose=verbose)
         self.load()
         if self.verbose:
             print(self.index)
@@ -221,9 +221,9 @@ class wallet:
         
         account_dict["addresses"].append(self.key.as_list)
         self._save_account(account_dict, account=anaccount)
-		# update reverse index
-		self.address_to_account[self.key.address] = anaccount
-		self._save_rindex()
+        # update reverse index
+        self.address_to_account[self.key.address] = anaccount
+        self._save_rindex()
         return self.key.address
 
         
@@ -231,7 +231,7 @@ class wallet:
         """
         returns the list of addresses of the given account
         """
-        account = self._get_account(anaccount)        
+        account = self._get_account(anaccount)
         return [address[0] for address in account["addresses"]]
         
         
@@ -277,18 +277,18 @@ class wallet:
                 #   mined on 2014-04-29T21:15:07Z
             """
             for account_name, account_details in self._parse_accounts():
-				try:
-					for address in account_details["addresses"]:
-						"""
-							Output format:
-							privkey1 RESERVED account=account1 addr=address1
-							- RESERVED is for timestamp later
-						"""
-						outfile.write("{} RESERVED account={} addr={}\n".format(address[2].replace('\n','').replace('\r',''), account_name, address[0]))
-				except:
-					# Silently ignore
-					pass
-		# needed for bitcoind compatibility
+                try:
+                    for address in account_details["addresses"]:
+                        """
+                            Output format:
+                            privkey1 RESERVED account=account1 addr=address1
+                            - RESERVED is for timestamp later
+                        """
+                        outfile.write("{} RESERVED account={} addr={}\n".format(address[2].replace('\n','').replace('\r',''), account_name, address[0]))
+                except:
+                    # Silently ignore
+                    pass
+        # needed for bitcoind compatibility
         return None
 
 
@@ -296,10 +296,12 @@ class wallet:
 Custom exceptions
 """
 
+
 class InvalidAccountName(Exception):
     code = -33001
     message = 'Invalid Account Name - 2 to 128 chars from b64 charset only.'
     data = None
+
 
 class InvalidPath(Exception):
     code = -33002

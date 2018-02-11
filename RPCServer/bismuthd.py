@@ -9,12 +9,12 @@ A bitcoind compatible rpc-server for Bismuth
 """
 
 import sys
-#from tornado import ioloop, web
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 
 # custom modules
-import rpcconfig, nodeclient
+import rpcconfig
+from nodeclient import Node
 from tornado_jsonrpc import JSONRPCHandler
 
 
@@ -29,9 +29,9 @@ if __name__ == "__main__":
     rpc_config.version = __version__
     
     try:
-        node = nodeclient.node(rpc_config)
+        node = Node(rpc_config)
     except Exception as e:
-        # At launch, it's ok to close if the node is not available.
+        # At launch, it's ok to close if the node is not available.
         # TODO: once started, disconnects and reconnects have to be taken care of seemlessly.
         print("Unable to connect to node :", e)
         sys.exit()
