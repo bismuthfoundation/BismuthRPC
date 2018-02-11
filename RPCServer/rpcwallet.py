@@ -65,7 +65,7 @@ class Wallet:
             if self.verbose:
                 print(index_fname,"does not exist, creating default")
                 # Default index file
-                self.index = {"version": __version__, "encrypted":False}
+                self.index = {'version': __version__, 'encrypted':False}
                 with open(index_fname, 'w') as outfile:  
                     json.dump(self.index, outfile)
                 # Inverted index
@@ -101,6 +101,8 @@ class Wallet:
                         json_contents = json_file.read()
                         res = json.loads(json_contents)
                         account = os.path.splitext(afile)[0]
+                        if 'default' == account:
+                            account = ''
                         yield (account, res)
                     except Exception as e:
                         if self.verbose:
@@ -133,12 +135,12 @@ class Wallet:
             json.dump(self.address_to_account, outfile)
 
 
-    def _check_account_name(self, account=""):
+    def _check_account_name(self, account=''):
         """
         Raise an exception if account name does not comply
         An account is 2-128 characters long, and may only contains the Base64 Character set. 
         """
-        if account == "":
+        if account == '':
             # empty if default account
             return True
         if len(account) < 2 or len(account) > 128:
@@ -153,7 +155,7 @@ class Wallet:
         Returns a dict with the given account info.
         """
         self._check_account_name(account)
-        if '' == account:
+        if '' == account or 'default' == account:
             fname = self.path+'/default.json'
             path = self.path
         else:
@@ -165,7 +167,7 @@ class Wallet:
                 print(fname,"does not exist, creating default")
             # Default account file
             self.key.generate() # This takes some time.
-            res = {"encrypted":False, "addresses":[self.key.as_list]}
+            res = {'encrypted':False, 'addresses':[self.key.as_list]}
             # and save account
             if not os.path.exists(path):
                 os.mkdir(path)
@@ -201,25 +203,59 @@ class Wallet:
         return True
 
 
-    def get_account_address(self, anaccount=""):
+    def get_account_address(self, anaccount=''):
         """
         returns the default address of the given account
         """
         account = self._get_account(anaccount) # This will handle address creation if doesn't exists yet.
-        addresses = account["addresses"][0]
+        addresses = account['addresses'][0]
         # Addresses is on fact [address,privkey,pubkey]
         # with privkey encrypted if wallet is.
         return addresses[0]
 
 
-    def get_new_address(self, anaccount=""):
+    def get_account(self, address):
+        """
+        returns the name of the account associated with the given address.
+        """
+        try:
+            return self.address_to_account[address]
+        except:
+            raise UnknownnAddress
+
+
+    def _get_keys_for_address(self, address):
+        """Finds the account of the address, then it's keys"""
+        print("_get_keys_for_address", address)
+        try:
+            print("add 2 account", self.address_to_account[address])
+            account = self._get_account(self.address_to_account[address])
+            print("account", account)
+            for keys in account['addresses']:
+                # keys is [address, encrypted, privkey, pubkey]
+                if keys[0] == address:
+                    return keys
+            raise UnknownnAddress
+        except:
+            raise UnknownnAddress
+
+
+    def dump_privkey(self, address):
+        """
+        returns the private key corresponding to an address. (But does not remove it from the wallet.)
+        """
+        keys = self._get_keys_for_address(address)
+        return keys[2]
+
+
+    def get_new_address(self, anaccount=''):
         """
         returns a new address for the given account
         """
         account_dict = self._get_account(anaccount) # This will handle address creation if doesn't exists yet.
         self.key.generate() # This takes some time.
         
-        account_dict["addresses"].append(self.key.as_list)
+        account_dict['addresses'].append(self.key.as_list)
         self._save_account(account_dict, account=anaccount)
         # update reverse index
         self.address_to_account[self.key.address] = anaccount
@@ -227,15 +263,15 @@ class Wallet:
         return self.key.address
 
         
-    def get_addresses_by_account(self, anaccount=""):
+    def get_addresses_by_account(self, anaccount=''):
         """
         returns the list of addresses of the given account
         """
         account = self._get_account(anaccount)
-        return [address[0] for address in account["addresses"]]
+        return [address[0] for address in account['addresses']]
         
         
-    def backup_wallet(self, afilename="bwallet.zip"):
+    def backup_wallet(self, afilename='bwallet.zip'):
         """
         Saves the whole wallet directory in a zip or tgz archive
         """
@@ -253,7 +289,7 @@ class Wallet:
         return True
         
         
-    def dump_wallet(self, afilename="dump.txt", version='n/a'):
+    def dump_wallet(self, afilename='dump.txt', version='n/a'):
         """
         Sends back a list of all privkeys for the wallet.
         """
@@ -278,7 +314,7 @@ class Wallet:
             """
             for account_name, account_details in self._parse_accounts():
                 try:
-                    for address in account_details["addresses"]:
+                    for address in account_details['addresses']:
                         """
                             Output format:
                             privkey1 RESERVED account=account1 addr=address1
@@ -306,6 +342,12 @@ class InvalidAccountName(Exception):
 class InvalidPath(Exception):
     code = -33002
     message = 'Path does not exist'
+    data = None
+
+
+class UnknownnAddress(Exception):
+    code = -33003
+    message = 'Unknown Address'
     data = None
 
 

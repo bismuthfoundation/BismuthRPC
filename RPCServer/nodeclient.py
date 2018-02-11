@@ -123,7 +123,31 @@ class Node:
             error = {"version":self.config.version, "error":str(e)}                
         return error
 
-        
+
+    async def getaccount(self, *args, **kwargs):
+        """(address)
+        returns the name of the account associated with the given address.
+        """
+        try:
+            address = args[1] # 0 is self
+            return self.wallet.get_account(address)
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}
+        return error
+
+
+    async def dumpprivkey(self, *args, **kwargs):
+        """(address)
+        returns the private key corresponding to an address. (But does not remove it from the wallet.)
+        """
+        try:
+            address = args[1] # 0 is self
+            return self.wallet.dump_privkey(address)
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}
+        return error
+
+
     async def getnewaddress(self, *args, **kwargs):
         """(account)
         Returns a new bitcoin address for receiving payments. 
