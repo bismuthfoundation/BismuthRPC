@@ -27,7 +27,7 @@ class JSONRPCHandler(RequestHandler):
     def set_default_headers(self):
         self.set_header('Content-Type', 'application/json')
 
-    def set_extra_headers(self, path):
+    def set_extra_headers(self, path=''):
         self.set_header('Cache-Control', 'no-store')
 
     def initialize(self, interface):

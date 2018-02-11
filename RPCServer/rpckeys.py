@@ -8,7 +8,7 @@ Will eventually be merged with node keys management to avoid duplicate code.
 #import base64, os, getpass, hashlib
 #from Crypto import Random
 #from simplecrypt import decrypt
-import os
+#import os
 import hashlib
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
@@ -23,7 +23,7 @@ class Key:
     """
     
     # TODO: Could add a "label" later on
-    __slots__ = ('verbose', 'encrypted', 'privkey', 'pubkey', 'address', 'IV', 'passphrase');
+    __slots__ = ('verbose', 'encrypted', 'privkey', 'pubkey', 'address', 'IV', 'passphrase')
     
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -52,9 +52,12 @@ class Key:
         """
         load Keys from the dict, returns self so we can chain if needed
         """
+        # TODO: broken!
+        """
         for key, value in adict.values():
             self.key = value
         return self
+        """
 
     def generate(self):
         """

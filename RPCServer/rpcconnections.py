@@ -21,7 +21,7 @@ __version__ = '0.1.5'
 class Connection(object):
     """Connection to a Bismuth Node. Handles auto reconnect when needed"""
 
-    __slots__ = ('ipport', 'verbose', 'sdef', 'stats');
+    __slots__ = ('ipport', 'verbose', 'sdef', 'stats')
     
     def __init__(self, ipport, verbose=False):
         """ipport is an (ip, port) tuple"""
@@ -53,19 +53,19 @@ class Connection(object):
             if self.verbose:
                 print("send ", data, "sent",res)
             return True
-        except Exception as E:
+        except Exception as e:
             # send failed, try to reconnect
             #TODO: handle tries #
             self.sdef = None
             if self.verbose:
-                print("Send failed, trying to reconnect")
+                print("Send failed ({}), trying to reconnect".format(e))
             self.check_connection()
             try:
                 self.sdef.settimeout(LTIMEOUT)
                 # Make sure the packet is sent in one call
                 self.sdef.sendall(str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen)+str(json.dumps(data)).encode("utf-8"))
                 return True
-            except Exception as E:
+            except Exception as e:
                 self.sdef = None
                 raise RuntimeError("Connections: {}".format(e))
 

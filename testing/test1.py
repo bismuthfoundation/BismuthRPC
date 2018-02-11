@@ -5,7 +5,7 @@
 Test and dev json-rpc client 
 """
 
-import time
+#import time
 
 # http://jsonrpcclient.readthedocs.io/en/latest/api.html
 import jsonrpcclient
