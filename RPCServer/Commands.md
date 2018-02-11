@@ -1,6 +1,7 @@
 # Bitcoin client API Command List
 
 Here is the original list from https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list
+A more up to date reference is here : https://bitcoin.org/en/developer-reference
 
 I'll edit along the way with what is supported or not (yet)
 
@@ -12,6 +13,8 @@ An account is either an empty styring (default account) or 2-128 characters long
 So, a numeric ID (in decimal or Hex form) is also ok.
 
 ## Implemented
+
+(and working)
 
 * getinfo - Returns an object containing various state info.  
   Compatible, plus extra info.
@@ -26,7 +29,11 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * getnewaddress  -  (account)  -  Returns a new bitcoin address for receiving payments. If (account) is specified payments received with the address will be credited to (account). 
 
-* backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
+* backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.  
+  Thanks @rvanduiven
+
+* dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file.   
+  Thanks @rvanduiven
 
 * dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
 
@@ -50,18 +57,21 @@ These commands are not known nor used by bitcoind
 
 * stop  -  Stop bitcoin server.
 * getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
+  (@iyomisc)
 
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
 * getreceivedbyaddress  -  (bitcoinaddress) (minconf=1)  -  Returns the amount received by (bitcoinaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.  
   Needs a new node command. TODO: suggest api_* commands and module to node.py and matching rights management.   
 
+@iyomisc?
 * getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
-* getblock  -  (hash)  -  Returns information about the block with the given hash. 
+* getblock  -  (hash)  -  Returns information about the block with the given hash.  
+  https://bitcoin.org/en/developer-reference#getblock
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
 
 * getpeerinfo  -   * version 0.7 Returns data about each connected node.  
   See https://bitcoin.org/en/developer-reference#getpeerinfo  
-   This will need some adjustments and a new command on node.py
+  This will need some adjustments and a new command on node.py
 
 See also new commands:
 
@@ -73,29 +83,19 @@ See also new commands:
 
 ## Help Appreciated
 
-Those commands are self contained and should be easy to implement in a safe a independant way.
+The following commands are self contained and should be OK to implement in a safe a independant way.
 I can do it, but it's always nice not to be alone :)
 
 More will come later on.
 
-
-* dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file 
-
-
-## To be implemented
-
-* help  -  (command)  -  List commands, or get help for a command.
-
-* getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. If (account) not provided return will include all transactions to all accounts. (version 0.3.24) 
-* listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values. 
-* listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
-* listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute bitcoind listreceivedbyaddress 0 true
-
-* importprivkey  -  (bitcoinprivkey) (account) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0. Note: There's no need to import public key, as in ECDSA (unlike RSA) this can be computed from private key. 
+* importprivkey  -  (bitcoinprivkey) (account) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0.  
+  Check with node code and tools from @maccaspacca. Add methods to keys.py that take a private key, regenerates public key as well as address.   
+  https://bitcoin.org/en/developer-reference#importprivkey
 
 
 The 4 following commands are to be coded in one go by the same person.
 See rpckeys.py and try_keys.py for the encryption/decryption logic.
+See also https://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-python-with-pycrypto for background info
 
 * encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
   Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
@@ -108,11 +108,22 @@ See rpckeys.py and try_keys.py for the encryption/decryption logic.
 * walletlock  -   * Removes the wallet encryption key from memory, locking the wallet. After calling this method, you will need to call walletpassphrase again before being able to call any methods which require the wallet to be unlocked. 
 
 
+
+## To be implemented
+
+* help  -  (command)  -  List commands, or get help for a command.
+
+* getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. If (account) not provided return will include all transactions to all accounts. (version 0.3.24) 
+* listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values. 
+* listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
+* listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute bitcoind listreceivedbyaddress 0 true
+
 * sendfrom  -  (fromaccount) (tobitcoinaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object). 
 * sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers 
 * sendtoaddress  -  (bitcoinaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful. 
 
-* gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"
+* gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"  
+  Needs additionnal command on node.py
 
 * gettxout  -  (txid) (n) (includemempool=true)  -  Returns details about an unspent transaction output (UTXO) 
 * gettxoutsetinfo  -   * Returns statistics about the unspent transaction output (UTXO) set 
@@ -134,20 +145,18 @@ See rpckeys.py and try_keys.py for the encryption/decryption logic.
 * getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id. 
 * signrawtransaction  -  (hexstring) ({"txid":txid,"vout":n,"scriptPubKey":hex},...) ((privatekey1),...)  -  version 0.7 Adds signatures to a raw transaction and returns the resulting raw transaction. /N
 
-
 * addnode  -  (node) (add remove="" onetry="")  -  version 0.8 Attempts add or remove (node) from the addnode list or try a connection to (node) once. 
 * getaddednodeinfo  -  (dns) (node)  -  version 0.8 Returns information about the given added node, or all added nodes
+
 * createmultisig  -  (nrequired) &lt;'("key,"key")'&gt;  -  Creates a multi-signature address and returns a json object  | 
 * addmultisigaddress  -  (nrequired) &lt;'("key","key")'&gt; (account)  -  Add a nrequired-to-sign multisignature address to the wallet. Each key is a bitcoin address or hex-encoded public key. If (account) is specified, assign address to (account). Returns a string containing the address. 
 * getblocktemplate  -  (params)  -  Returns data needed to construct a block to work on. See  BIP_0022 for more info on params.
 * getmininginfo  -   * Returns an object containing mining-related information: blocks, currentblocksize,currentblocktx, difficulty,errors,generate,genproclimit,hashespersec,pooledtx, testnet
 * submitblock  -  (hex data="") (optional-params-obj)  -  Attempts to submit new block to network. 
-* getmemorypool  -  (data)  -  Replaced in v0.7.0 with getblocktemplate, submitblock, getrawmempool 
 * getrawchangeaddress  -  (account) * version 0.9 Returns a new Bitcoin address, for receiving change. This is for use with raw transactions, NOT normal use. 
 * getwork  -  (data)  -  If (data) is not specified, returns formatted hash data to work on:, "midstate"&nbsp;: precomputed hash state after hashing the first half of the data,  "data"&nbsp;: block data,  "hash1"&nbsp;: formatted hash buffer for second hash,  "target"&nbsp;: little endian hash target, If (data) is specified, tries to solve the block and returns true if it was successful.
 * listlockunspent  -   * version 0.8 Returns list of temporarily unspendable outputs
 * lockunspent  -  (unlock?) (array-of-objects)  -  version 0.8 Updates list of temporarily unspendable outputs
-* move  -  (fromaccount) (toaccount) (amount) (minconf=1) (comment)  -  Move from one account in your wallet to another 
 
 ## Won't implement
 
@@ -156,6 +165,10 @@ See rpckeys.py and try_keys.py for the encryption/decryption logic.
 
 * listaddressgroupings  -   * version 0.7 Returns all addresses in the wallet and info used for coincontrol. 
   https://bitcoin.org/en/developer-reference#listaddressgroupings
+
+* move  -  (fromaccount) (toaccount) (amount) (minconf=1) (comment)  -  Move from one account in your wallet to another 
+
+* getmemorypool  -  (data)  -  Replaced in v0.7.0 with getblocktemplate, submitblock, getrawmempool 
 
 These commands may have no sense in the Bismuth context.
 
