@@ -23,10 +23,6 @@ __version__ = "0.0.3"
 
 
 
-
-
-# TODO: maintain an inverted index of address:account and a re-index method.
-
 class wallet:    
     """
     Handles a .wallet directory, with accounts, addresses, keys and wallet encryption/backup.
@@ -117,7 +113,6 @@ class wallet:
         """
         if self.verbose:
             print("Reindexing wallet - can take some time")
-        # WIP
         self.address_to_account = {}
         for account_name, account_details in self._parse_accounts():
             try:
@@ -176,6 +171,9 @@ class wallet:
                     os.mkdir(path)
                 with open(fname, 'w') as outfile:  
                     json.dump(res, outfile)
+                # update reverse index
+                self.address_to_account[self.key.address] = account
+                self._save_rindex()
         else:
             with open(fname) as json_file:  
                 res = json.load(json_file)
@@ -223,6 +221,9 @@ class wallet:
         
         account_dict["addresses"].append(self.key.as_list)
         self._save_account(account_dict, account=anaccount)
+		# update reverse index
+		self.address_to_account[self.key.address] = anaccount
+		self._save_rindex()
         return self.key.address
 
         
@@ -271,41 +272,23 @@ class wallet:
                 outfile.write('# * Wallet is Encrypted\n')
             else:
                 outfile.write('# * Wallet is Unencrypted\n')
-
             """ @TODO add block information like:
                 # * Best block at time of backup was 227221 (0000000026ede4c10594af8087748507fb06dcd30b8f4f48b9cc463cabc9d767),
                 #   mined on 2014-04-29T21:15:07Z
             """
-            
-            # TODO: since this will be used in other functions, use a generator to get all account files.
-            
-            # Walk all files, search for keys and parse them
-            for root, dirs, files in os.walk(self.path):
-                for afile in files:
-                    # check if this is a json file
-                    ext = os.path.splitext(afile)[-1].lower()
-                    if ext != ".json":
-                        continue
-                    # Avoid the indexes
-                    if afile.lower() in ('index.json','rindex.json') :
-                        continue
-                    # io is used here to avoid cross platform issues with UTF-8 BOM.
-                    with io.open(os.path.join(root,afile), 'r', encoding='utf-8-sig') as json_file:
-                        try:
-                            json_contents = json_file.read()
-                            res = json.loads(json_contents)
-
-                            account = os.path.splitext(afile)[0]
-                            if 'addresses' in res:
-                                for address in res["addresses"]:
-                                    """
-                                        Output format:
-                                        privkey1 RESERVED account=account1 addr=address1
-                                        - RESERVED is for timestamp later
-                                    """
-                                    outfile.write("{} RESERVED account={} addr={}\n".format(address[2].replace('\n','').replace('\r',''), account, address[0]))
-                        except ValueError:
-                            return None
+            for account_name, account_details in self._parse_accounts():
+				try:
+					for address in account_details["addresses"]:
+						"""
+							Output format:
+							privkey1 RESERVED account=account1 addr=address1
+							- RESERVED is for timestamp later
+						"""
+						outfile.write("{} RESERVED account={} addr={}\n".format(address[2].replace('\n','').replace('\r',''), account_name, address[0]))
+				except:
+					# Silently ignore
+					pass
+		# needed for bitcoind compatibility
         return None
 
 
