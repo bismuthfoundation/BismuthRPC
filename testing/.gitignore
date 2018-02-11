@@ -3,6 +3,7 @@ bismuthd.conf
 .wallet
 __pycache__
 test1sd.py
+test2sd.py
 *.old
 *.sav
 *.bak
