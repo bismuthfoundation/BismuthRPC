@@ -22,9 +22,13 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * getaddressesbyaccount  -  (account)  -  Returns the list of addresses for the given account.  
 
+* getaccount  -  (bismuthaddress)  -  Returns the account associated with the given address.  
+
 * getnewaddress  -  (account)  -  Returns a new bitcoin address for receiving payments. If (account) is specified payments received with the address will be credited to (account). 
 
 * backupwallet  -  (destination)  -  Safely copies wallet.dat to destination, which can be a directory or a path with filename.
+
+* dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
 
 * getblocknumber  -   * Deprecated. Removed in version 0.7. Use getblockcount. 
 
@@ -34,13 +38,9 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * stop  -  Stop bitcoin server.
 
-* getaccount  -  (bitcoinaddress)  -  Returns the account associated with the given address.  
-
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
 
 * getreceivedbyaddress  -  (bitcoinaddress) (minconf=1)  -  Returns the amount received by (bitcoinaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.   
-
-* dumpprivkey  -  (bitcoinaddress)  -  Reveals the private key corresponding to (bitcoinaddress) 
 
 * getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
 * getblock  -  (hash)  -  Returns information about the block with the given hash. 

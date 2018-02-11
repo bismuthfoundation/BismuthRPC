@@ -10,17 +10,18 @@ __version__ = '0.1.1'
 class Get:
     
     # "param_name":["type"] or "param_name"=["type","property_name"]
-    vars={"bismuthnode":["str"],"bismuthpath":["str"],"rpcuser":["str"],"rpcpassword":["str"],"loglevel":["str"],"verbose":["int"],"rpcport":["int"]}
+    vars={"bismuthnode":["str"], "bismuthpath":["str"], "rpcuser":["str"], "rpcpassword":["str"], "loglevel":["str"], "verbose":["int"], "rpcport":["int"]}
  
     def __init__(self):
         self.verbose = 0
         self.rpcport = 8115
+        self.read()
  
-    def load_file(self,filename):
-        print("Loading",filename)
+    def load_file(self, filename):
+        print("Loading", filename)
         for line in open(filename):
             if '=' in line:
-                left,right = map(str.strip,line.rstrip("\n").split("="))
+                left, right = map(str.strip, line.rstrip("\n").split("="))
                 if not left in self.vars:
                     # Warn for unknown param?
                     continue
@@ -35,7 +36,7 @@ class Get:
                 if len(params)>1:
                     # deal with properties that do not match the config name.
                     left = params[1]
-                setattr(self,left,right)      
+                setattr(self, left, right)
                     
     def read(self):
         # first of all, load from default config so we have all needed params
