@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 __version__ = '0.0.1'
 
 
-class asyncttlcache(object):
+class Asyncttlcache(object):
     def __init__(self, *args, **kwargs):
         self.cached_function_responses = {}
         self.ttl = kwargs.get("ttl", 10)
@@ -48,7 +48,7 @@ class asyncttlcache(object):
 # Not needed now, since only async version is needed for now
 
 """
-class ttlcache(object):
+class Ttlcache(object):
     def __init__(self, *args, **kwargs):
         self.cached_function_responses = {}
         self.ttl = kwargs.get("ttl", 10)

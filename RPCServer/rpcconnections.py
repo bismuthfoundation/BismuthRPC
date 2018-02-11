@@ -14,11 +14,11 @@ LTIMEOUT = 45
 SLEN = 10
 
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 
 
-class connection(object):
+class Connection(object):
     """Connection to a Bismuth Node. Handles auto reconnect when needed"""
 
     __slots__ = ('ipport', 'verbose', 'sdef', 'stats');
