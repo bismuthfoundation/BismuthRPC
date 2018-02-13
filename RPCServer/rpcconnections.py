@@ -14,12 +14,14 @@ LTIMEOUT = 45
 SLEN = 10
 
 
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 
 
 
 class Connection(object):
     """Connection to a Bismuth Node. Handles auto reconnect when needed"""
+
+    # TODO: add a maintenance thread that requests blockheight every 30 sec and updates balances when new blocks() are there.
 
     __slots__ = ('ipport', 'verbose', 'sdef', 'stats')
     
@@ -43,7 +45,7 @@ class Connection(object):
                 raise RuntimeError("Connections: {}".format(e))
 
         
-    def send(self, data, slen=SLEN):
+    def _send(self, data, slen=SLEN):
         """Sends something to the server"""
         self.check_connection()
         try:
@@ -70,7 +72,7 @@ class Connection(object):
                 raise RuntimeError("Connections: {}".format(e))
 
 
-    def receive(self, slen=SLEN):
+    def _receive(self, slen=SLEN):
         """Wait for an answer, for LTIMEOUT sec."""
         self.check_connection()
         self.sdef.settimeout(LTIMEOUT)
@@ -105,10 +107,17 @@ class Connection(object):
             raise RuntimeError("Connections: {}".format(e))
 
 
-    def command(self,command):
-        """Sends a command and return it's raw result"""
+    def command(self,command, options=None):
+        """
+        Sends a command and return it's raw result.
+        options has to be a list.
+        """
+        # TODO: lock, do not allow other send or receive in between
         try:
-            self.send(command)
+            self._send(command)
+            if options:
+                for option in options:
+                    self._send(option)
             ret = self.receive()
             return ret
         except:
@@ -116,8 +125,8 @@ class Connection(object):
             if self.verbose:
                 print("Command failed, trying to reconnect")
             self.check_connection()
-            self.send(command)
-            ret = self.receive()
+            self._send(command)
+            ret = self._receive()
             return ret
 
 

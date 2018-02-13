@@ -48,7 +48,7 @@ client.request('getinfo')
 
 client.request('getblockcount')
 
-
+client.request('listaccounts')
 #time.sleep(11)
 # but not this one
 #client.request('getinfo')
@@ -71,7 +71,7 @@ client.request('getaddressesbyaccount','')
 
 
 # Dump the wallet keys, should create a wallet_dump.txt file in the nodeclient.py directory
-client.request('dumpwallet', 'wallet_dump.txt')
+#client.request('dumpwallet', 'wallet_dump.txt')
 
 #client.request('getbalance')
 """

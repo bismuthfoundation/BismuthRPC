@@ -225,6 +225,17 @@ class Wallet:
             raise UnknownnAddress
 
 
+    def list_accounts(self, minconf=1):
+        """
+        Returns dict that has account names as keys, account balances as values.
+        """
+        # TODO: add account balance
+        try:
+            accounts = {account_name: -1 for account_name, _ in self._parse_accounts()}
+            return accounts
+        except:
+            raise UnknownnAddress
+
     def _get_keys_for_address(self, address):
         """Finds the account of the address, then it's keys"""
         print("_get_keys_for_address", address)
