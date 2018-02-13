@@ -10,9 +10,11 @@ Will eventually be merged with node keys management to avoid duplicate code.
 #from simplecrypt import decrypt
 #import os
 import hashlib
+import base64
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
-
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA
 
 __version__ = "0.0.2"
 
@@ -42,6 +44,14 @@ class Key:
         return {"address":self.address, "encrypted":self.encrypted, "privkey":self.privkey, "pubkey":self.pubkey}
 
     @property
+    def hashed_pubkey(self):
+        """
+        The pubkey, hashed
+        :return: String
+        """
+        return base64.b64encode(self.pubkey.encode("utf-8")).decode("utf-8")
+
+    @property
     def as_list(self):
         """
         The core properties as a list
@@ -58,6 +68,30 @@ class Key:
             self.key = value
         return self
         """
+
+    def from_list(self, alist):
+        """
+        load Keys from the list, returns self so we can chain if needed
+        :param alist:
+        :return:
+        """
+        self.address, self.encrypted, self.privkey, self.pubkey = alist
+        return self
+
+    def sign(self, signed_part, base64=False):
+        """
+        Sign a message or transaction with PKCS1_v1_5
+        :param base64: if True, encodes the signature with b64 (default False)
+        :return: String. The signature alone.
+        """
+        key = RSA.importKey(self.privkey)
+        h = SHA.new(str(signed_part).encode("utf-8"))
+        signer = PKCS1_v1_5.new(key)
+        signature = signer.sign(h)
+        if base64:
+            return base64.b64encode(signature)
+        else:
+            return signature
 
     def generate(self):
         """

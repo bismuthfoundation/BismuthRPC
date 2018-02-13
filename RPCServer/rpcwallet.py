@@ -29,6 +29,8 @@ class Wallet:
     """
     # Warning: make sure this is thread safe as it will be called from multiple threads. Use queues and locks when needed.
     # TODO
+
+    # TODO: When first iteration ok, process all docstrings
     
     __slots__ = ('path', 'verbose', 'encrypted', 'locked', 'passphrase', 'IV','index', 'key', 'address_to_account')
     # TODO: those properties should be converted to _protected later on.
@@ -109,23 +111,6 @@ class Wallet:
                             print("Possible error {} on file {}".format(e, afile))
                 
                 
-    def reindex(self):
-        """
-        Regenerates the inverted index self.address_to_account (rindex.json)
-        """
-        if self.verbose:
-            print("Reindexing wallet - can take some time")
-        self.address_to_account = {}
-        for account_name, account_details in self._parse_accounts():
-            try:
-                for address in account_details['addresses']:
-                    self.address_to_account[address[0]] = account_name
-            except:
-                pass
-        self._save_rindex()
-        return True
-
-
     def _save_rindex(self):
         """
         Sync our reverse index to file
@@ -201,6 +186,64 @@ class Wallet:
         with open(fname, 'w') as outfile:  
             json.dump(account_dict, outfile)            
             
+        return True
+
+
+    def _make_unsigned_transaction(self, from_address, to_address, amount=0, data='', timestamp = 0):
+        """
+        :param from_address:
+        :param to_address:
+        :param amount:
+        :param data:
+        :param timestamp:
+        :return: List. An unsigned transaction, mempool format
+        """
+        if timestamp <= 0:
+            timestamp = '%.2f' % time.time()
+        else:
+            # correct format %.2f is critical for signature validity
+            timestamp = '%.2f' % float(timestamp)
+        amount = '%.8f' % float(amount)
+        keep = '0'
+        signature = ''
+        public_key_hashed = ''
+        return [timestamp, str(from_address), str(to_address), amount, signature, public_key_hashed, keep, str(data)]
+
+
+    def _sign_transaction(self, transaction):
+        """
+        Lookup the correct key and Sign a transaction.
+        Throws an exception if the address is not in the wallet.
+        :param transaction: an unsigned transaction from _make_unsigned_transaction
+        :return: List. A signed transaction.
+        """
+        address = transaction[1]
+        if float(transaction[3]) < 0:
+            raise NegativeAmount
+        signed_part = transaction[:4]+transaction[6:2] # (transaction[0], transaction[1], transaction[2], transaction[3], transaction[6], transaction[7])  # this is signed
+        # Find the keys and init the crypto thingy
+        the_key = Key.from_list(self._get_keys_for_address(address))
+        signature_enc = the_key.sign(signed_part, base64=True)
+        public_key_hashed = the_key.hashed_pubkey
+        transaction[4] = str(signature_enc.decode("utf-8"))
+        transaction[5] = str(public_key_hashed)
+        #txid = signature_enc[:56]
+        return transaction
+
+    def reindex(self):
+        """
+        Regenerates the inverted index self.address_to_account (rindex.json)
+        """
+        if self.verbose:
+            print("Reindexing wallet - can take some time")
+        self.address_to_account = {}
+        for account_name, account_details in self._parse_accounts():
+            try:
+                for address in account_details['addresses']:
+                    self.address_to_account[address[0]] = account_name
+            except:
+                pass
+        self._save_rindex()
         return True
 
 
@@ -347,19 +390,25 @@ Custom exceptions
 
 class InvalidAccountName(Exception):
     code = -33001
-    message = 'Invalid Account Name - 2 to 128 chars from b64 charset only.'
+    message = "Invalid Account Name - 2 to 128 chars from b64 charset only."
     data = None
 
 
 class InvalidPath(Exception):
     code = -33002
-    message = 'Path does not exist'
+    message = "Path does not exist"
     data = None
 
 
 class UnknownnAddress(Exception):
     code = -33003
-    message = 'Unknown Address'
+    message = "Unknown Address"
+    data = None
+
+
+class NegativeAmount(Exception):
+    code = -33004
+    message = "Can't use a negative amount"
     data = None
 
 
