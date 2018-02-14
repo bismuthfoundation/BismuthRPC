@@ -16,7 +16,7 @@ from Crypto.Cipher import AES
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 
 class Key:
@@ -47,9 +47,9 @@ class Key:
     def hashed_pubkey(self):
         """
         The pubkey, hashed
-        :return: String
+        :return: str
         """
-        return base64.b64encode(self.pubkey.encode("utf-8")).decode("utf-8")
+        return str(base64.b64encode(self.pubkey.encode("utf-8")).decode("utf-8"))
 
     @property
     def as_list(self):
@@ -78,17 +78,18 @@ class Key:
         self.address, self.encrypted, self.privkey, self.pubkey = alist
         return self
 
-    def sign(self, signed_part, base64=False):
+    def sign(self, signed_part, base64_output=False):
         """
         Sign a message or transaction with PKCS1_v1_5
-        :param base64: if True, encodes the signature with b64 (default False)
+        :param signed_part: the message or transaction tuple to sign
+        :param base64_output: if True, encodes the signature with b64 (default False)
         :return: String. The signature alone.
         """
         key = RSA.importKey(self.privkey)
         h = SHA.new(str(signed_part).encode("utf-8"))
         signer = PKCS1_v1_5.new(key)
         signature = signer.sign(h)
-        if base64:
+        if base64_output:
             return base64.b64encode(signature)
         else:
             return signature
@@ -100,8 +101,8 @@ class Key:
         key = RSA.generate(4096)
         self.privkey = key.exportKey().decode("utf-8")
         """
-        TODO: surely we sould strip the RSA header and footer -----BEGIN RSA PRIVATE KEY-----\n
-        from the data when encrypting, or this makes it easier to brute force.
+        TODO: surely we should strip the RSA header and footer -----BEGIN RSA PRIVATE KEY-----\n
+        from the data when encrypting, or this may make it easier to brute force.
         """
         self.encrypted = False
         self.pubkey = key.publickey().exportKey().decode("utf-8")

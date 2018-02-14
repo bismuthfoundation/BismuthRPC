@@ -37,9 +37,18 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * dumpwallet  -  (filename)  -  version 0.13.0 Exports all wallet private keys to file.   
   Thanks @rvanduiven
 
-* dumpprivkey  -  (bismuthaddress)  -  Reveals the private key corresponding to (bismuthaddress) 
+* dumpprivkey  -  (bismuthaddress)  -  Reveals the private key corresponding to (bismuthaddress)
 
-* getblocknumber  -   * Deprecated. Removed in version 0.7. Use getblockcount. 
+* createrawtransaction  -  (fromaddress, toaddress, amount, optional data, optional timestamp)  
+  Bismuthd: Creates an unsigned transaction, output is a list, mempool compatible.  
+  The format and interface of this method are *NOT* bitcoind compatible because of structural differences.
+  
+* signrawtransaction  -  (unsigned raw transaction)  
+  Bismuthd: Adds signature to a raw transaction and returns the resulting raw transaction.  
+  The "from" address has to be in our wallet. Key will be fetched and used to sign.
+  The format and interface of this method are *NOT* bitcoind compatible because of structural differences.
+   
+* getblocknumber  -   * Deprecated in bitcoind version 0.7. Use getblockcount. Left for compatibility purposes. 
 
 * getblockcount  -   * Returns the number of blocks in the longest block chain. 
 
@@ -170,9 +179,6 @@ Maybe implement with variations (use json instead of hexstring).
 * decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
 * getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
  
-* signrawtransaction  -  (hexstring) ({"txid":txid,"vout":n,"scriptPubKey":hex},...) ((privatekey1),...)  -  version 0.7 Adds signatures to a raw transaction and returns the resulting raw transaction.  
-  Is this useful? We can avoid if createrawtransaction already signs it.
-
   
 
 * addnode  -  (node) (add remove="" onetry="")  -  version 0.8 Attempts add or remove (node) from the addnode list or try a connection to (node) once. 
