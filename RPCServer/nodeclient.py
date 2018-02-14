@@ -236,6 +236,38 @@ class Node:
         return error
 
 
+    async def createrawtransaction(self, *args, **kwargs):
+        """
+        (fromaddress, toaddress, amount, optional data, optional timestamp)
+         Bismuthd: Creates an unsigned transaction, output is a list, mempool compatible.
+        The format and interface of this method are *NOT* bitcoind compatible because of structural differences.
+        """
+        try:
+            from_address, to_address, amount = args[1:4] # 0 is self
+            data = ''
+            timestamp = 0
+            if len(args)>4:
+                data = args[4]
+            if len(args)>5:
+                timestamp = args[5]
+            return self.wallet.make_unsigned_transaction(from_address, to_address, amount, data, timestamp)
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
+
+    async def signrawtransaction(self, *args, **kwargs):
+        """
+        Bismuthd: Adds signature to a raw transaction and returns the resulting raw transaction.
+        The "from" address has to be in our wallet. Key will be fetched and used to sign.
+        The format and interface of this method are *NOT* bitcoind compatible because of structural differences.
+        """
+        try:
+            return self.wallet.sign_transaction(args[1:])
+        except Exception as e:
+            print(e)
+            return {"version": self.config.version, "error": str(e)}
+
+
     async def sendfrom(self, *args, **kwargs):
         """
         Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful.

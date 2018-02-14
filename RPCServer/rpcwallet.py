@@ -14,6 +14,7 @@ import os
 import json
 import re
 import zipfile
+import time
 import datetime
 import io
 
@@ -189,7 +190,7 @@ class Wallet:
         return True
 
 
-    def _make_unsigned_transaction(self, from_address, to_address, amount=0, data='', timestamp = 0):
+    def make_unsigned_transaction(self, from_address, to_address, amount=0, data='', timestamp = 0):
         """
         :param from_address:
         :param to_address:
@@ -198,7 +199,7 @@ class Wallet:
         :param timestamp:
         :return: List. An unsigned transaction, mempool format
         """
-        if timestamp <= 0:
+        if float(timestamp) <= 0:
             timestamp = '%.2f' % time.time()
         else:
             # correct format %.2f is critical for signature validity
@@ -210,7 +211,7 @@ class Wallet:
         return [timestamp, str(from_address), str(to_address), amount, signature, public_key_hashed, keep, str(data)]
 
 
-    def _sign_transaction(self, transaction):
+    def sign_transaction(self, transaction):
         """
         Lookup the correct key and Sign a transaction.
         Throws an exception if the address is not in the wallet.
@@ -220,15 +221,19 @@ class Wallet:
         address = transaction[1]
         if float(transaction[3]) < 0:
             raise NegativeAmount
-        signed_part = transaction[:4]+transaction[6:2] # (transaction[0], transaction[1], transaction[2], transaction[3], transaction[6], transaction[7])  # this is signed
+        signed_part = (transaction[:4] + transaction[6:8]) # This removes signature and "hashed" pubkey
         # Find the keys and init the crypto thingy
-        the_key = Key.from_list(self._get_keys_for_address(address))
-        signature_enc = the_key.sign(signed_part, base64=True)
+        the_key = Key()
+        the_key.from_list(self._get_keys_for_address(address))
+        # signed_part has to be a tuple, or the signature won't match
+        signature_enc = the_key.sign(signed_part, base64_output=True)
         public_key_hashed = the_key.hashed_pubkey
-        transaction[4] = str(signature_enc.decode("utf-8"))
-        transaction[5] = str(public_key_hashed)
+        signed = list(transaction)
+        signed[4] = str(signature_enc.decode("utf-8"))
+        signed[5] = public_key_hashed
         #txid = signature_enc[:56]
-        return transaction
+        return signed
+
 
     def reindex(self):
         """
@@ -265,7 +270,7 @@ class Wallet:
         try:
             return self.address_to_account[address]
         except:
-            raise UnknownnAddress
+            raise UnknownAddress
 
 
     def list_accounts(self, minconf=1):
@@ -277,22 +282,22 @@ class Wallet:
             accounts = {account_name: -1 for account_name, _ in self._parse_accounts()}
             return accounts
         except:
-            raise UnknownnAddress
+            raise UnknownAddress
 
     def _get_keys_for_address(self, address):
         """Finds the account of the address, then it's keys"""
-        print("_get_keys_for_address", address)
+        #print("_get_keys_for_address", address)
         try:
-            print("add 2 account", self.address_to_account[address])
+            #print("add 2 account", self.address_to_account[address])
             account = self._get_account(self.address_to_account[address])
-            print("account", account)
+            #print("account", account)
             for keys in account['addresses']:
                 # keys is [address, encrypted, privkey, pubkey]
                 if keys[0] == address:
                     return keys
-            raise UnknownnAddress
+            raise UnknownAddress
         except:
-            raise UnknownnAddress
+            raise UnknownAddress
 
 
     def dump_privkey(self, address):
@@ -386,6 +391,7 @@ class Wallet:
 """
 Custom exceptions
 """
+# TODO: not so sure it's a good idea. Better go with builtin exceptions?
 
 
 class InvalidAccountName(Exception):
@@ -400,7 +406,7 @@ class InvalidPath(Exception):
     data = None
 
 
-class UnknownnAddress(Exception):
+class UnknownAddress(Exception):
     code = -33003
     message = "Unknown Address"
     data = None
