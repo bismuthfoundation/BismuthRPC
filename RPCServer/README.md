@@ -28,3 +28,6 @@ You only need to define what changes, not everything.
 `python3 bismuthd.py`
 
 
+# DOC
+
+All info and current state of working commands is in the [Commands.md file](Commands.md)
