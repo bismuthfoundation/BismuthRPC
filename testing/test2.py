@@ -37,3 +37,4 @@ client.request('getblockhash', 10000)
 client.request('getrawmempool')
 
 
+# client.request('importprivkey','-----BEGIN RSA PRIVATE KEY-----\nHERE_IS_THE_PRIVKEY\n-----END RSA PRIVATE KEY-----')

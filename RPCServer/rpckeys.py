@@ -78,6 +78,19 @@ class Key:
         self.address, self.encrypted, self.privkey, self.pubkey = alist
         return self
 
+    def from_privkey(self, privkey):
+        """
+        imports privkey and recomputes pubkey and address
+        :param privkey: privkey PEM format as in privkey.der, including boundaries
+        :return:self
+        """
+        key = RSA.importKey(privkey)
+        self.privkey = privkey
+        self.pubkey = key.publickey().exportKey().decode("utf-8")
+        self.address = hashlib.sha224(key.publickey().exportKey()).hexdigest()
+        self.encrypted = False
+        return self
+
     def sign(self, signed_part, base64_output=False):
         """
         Sign a message or transaction with PKCS1_v1_5
