@@ -93,10 +93,10 @@ class Wallet:
             for afile in files:
                 # check if this is a json file
                 ext = os.path.splitext(afile)[-1].lower()
-                if ext != ".json":
+                if ext != '.json':
                     continue
                 # Avoid the indexes
-                if afile.lower() in ('index.json','rindex.json') :
+                if afile.lower() in ('index.json', 'rindex.json') :
                     continue
                 # io is used here to avoid cross platform issues with UTF-8 BOM.
                 with io.open(os.path.join(root,afile), 'r', encoding='utf-8-sig') as json_file:
@@ -202,12 +202,14 @@ class Wallet:
         if float(timestamp) <= 0:
             timestamp = '%.2f' % time.time()
         else:
-            # correct format %.2f is critical for signature validity
+            # correct format %.2f is critical for signature validity
             timestamp = '%.2f' % float(timestamp)
         amount = '%.8f' % float(amount)
         keep = '0'
         signature = ''
         public_key_hashed = ''
+        if len(data) > 100000:
+            data = data[:100000]
         return [timestamp, str(from_address), str(to_address), amount, signature, public_key_hashed, keep, str(data)]
 
 
@@ -229,7 +231,7 @@ class Wallet:
         signature_enc = the_key.sign(signed_part, base64_output=True)
         public_key_hashed = the_key.hashed_pubkey
         signed = list(transaction)
-        signed[4] = str(signature_enc.decode("utf-8"))
+        signed[4] = str(signature_enc.decode('utf-8'))
         signed[5] = public_key_hashed
         #txid = signature_enc[:56]
         return signed
@@ -286,11 +288,8 @@ class Wallet:
 
     def _get_keys_for_address(self, address):
         """Finds the account of the address, then it's keys"""
-        #print("_get_keys_for_address", address)
         try:
-            #print("add 2 account", self.address_to_account[address])
             account = self._get_account(self.address_to_account[address])
-            #print("account", account)
             for keys in account['addresses']:
                 # keys is [address, encrypted, privkey, pubkey]
                 if keys[0] == address:
