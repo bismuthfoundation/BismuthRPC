@@ -11,7 +11,7 @@ This list and comments are WIP and are valid for version 0.1b of this Bismuthd A
 ## Accounts
 
 An account roughly represents a user. An account may hold one or several addresses.  
-An account is either an empty styring (default account) or 2-128 characters long, and may only contains the Base64 Character set.  
+An account is either an empty string (default account) or 2-128 characters long, and may only contains the Base64 Character set.  
 So, a numeric ID (in decimal or Hex form) is also ok.
 
 ## Implemented
