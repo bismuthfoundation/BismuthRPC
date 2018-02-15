@@ -197,6 +197,25 @@ class Node:
         return error
 
 
+    async def importprivkey(self, *args, **kwargs):
+        """(privkey, account, rescan)
+        Imports the given privkey in the given account and save updated wallet
+        returns Null on success
+        """
+        try:
+            privkey = args[1] # 0 is self
+            account_name = ''
+            if len(args) > 2:
+                account_name = args[2]
+            rescan = False
+            if len(args) > 3:
+                rescan = args[3]
+            return self.wallet.import_privkey(privkey, account_name, rescan)
+        except Exception as e:
+            error = {"version":self.config.version, "error":str(e)}
+        return error
+
+
     async def getnewaddress(self, *args, **kwargs):
         """(account)
         Returns a new bitcoin address for receiving payments. 
