@@ -39,6 +39,11 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * dumpprivkey  -  (bismuthaddress)  -  Reveals the private key corresponding to (bismuthaddress)
 
+* importprivkey  -  (bismuthprivkey) (account) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0.    
+  Takes a private key, regenerates public key as well as address, add to an account and updates wallet.     
+  https://bitcoin.org/en/developer-reference#importprivkey  
+  Thanks @iyomisc
+
 * createrawtransaction  -  (fromaddress, toaddress, amount, optional data, optional timestamp)  
   Bismuthd: Creates an unsigned transaction, output is a list, mempool compatible.  
   The format and interface of this method are *NOT* bitcoind compatible because of structural differences.
@@ -53,9 +58,10 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * getblockcount  -   * Returns the number of blocks in the longest block chain. 
 
 * getblockhash  -  (index)  -  Returns hash of block in best-block-chain at (index); index 0 is the genesis block 
-
+  Thanks @iyomisc
+  
 * getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
-
+  Thanks @iyomisc
 
 ## Working on
 
@@ -100,12 +106,6 @@ See also new commands:
 The following commands are self contained and should be OK to implement in a safe a independant way.
 I can do it, but it's always nice not to be alone :)
 
-More will come later on.
-
-* importprivkey  -  (bismuthprivkey) (account) (rescan=true) * Adds a private key (as returned by dumpprivkey) to your wallet. This may take a while, as a rescan is done, looking for existing transactions. Optional (rescan) parameter added in 0.8.0.  
-  Check with node code and tools from @maccaspacca. Add methods to keys.py that take a private key, regenerates public key as well as address.   
-  https://bitcoin.org/en/developer-reference#importprivkey
-
 
 The 4 following commands are to be coded in one go by the same person.
 See rpckeys.py and try_keys.py for the encryption/decryption logic.
@@ -121,7 +121,9 @@ See also https://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-pyt
   This call returns the random IV used.
 * walletlock  -   * Removes the wallet encryption key from memory, locking the wallet. After calling this method, you will need to call walletpassphrase again before being able to call any methods which require the wallet to be unlocked. 
 
-
+The more the project move forward, the difficult it is to give small tasks for beginners.  
+So I won't add more here, but you can look at the code, and if you understand and feel comfortable with it, then pick a function from "To be implemented" and give it a try.  
+Tell me via an issue so I know tyou're working on it.
 
 ## To be implemented
 
@@ -152,6 +154,15 @@ See also https://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-pyt
 * listtransactions  -  (account) (count=10) (from=0)  -  Returns up to (count) most recent transactions skipping the first (from) transactions for account (account). If (account) not provided it'll return recent transactions from all accounts.
 * listunspent  -  (minconf=1) (maxconf=999999)  -  version 0.7 Returns array of unspent transaction inputs in the wallet. 
 
+"rawtransaction" would be objects like line of mempool. Can contain a signature or not.  
+Maybe implement with variations (use json instead of hexstring).  
+
+* sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
+* decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
+* getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
+ 
+  
+
 * validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
 
 * signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
@@ -170,16 +181,6 @@ These commands are not known nor used by bitcoind
 
 
 ## Undecided
-
-"rawtransaction" would be objects like line of mempool. Can contain a signature or not.  
-Maybe implement with variations (use json instead of hexstring).  
-
-* sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
-* createrawtransaction  -  ({"txid":txid,"vout":n},...) {address:amount,...}  _  version 0.7 Creates a raw transaction spending given inputs.
-* decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
-* getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
- 
-  
 
 * addnode  -  (node) (add remove="" onetry="")  -  version 0.8 Attempts add or remove (node) from the addnode list or try a connection to (node) once. 
 * getaddednodeinfo  -  (dns) (node)  -  version 0.8 Returns information about the given added node, or all added nodes
