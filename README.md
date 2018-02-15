@@ -16,3 +16,12 @@ https://bitcoin.org/en/developer-reference#remote-procedure-calls-rpcs
 
 live API  
 https://blockchain.info/fr/api/json_rpc_api
+
+# Current status
+
+All info and current state of working commands is in the [Commands.md file](RPCServer/Commands.md)
+
+# Helping
+
+See Github issues for help wanted.  
+Thanks to @rvanduiven and iyomisc for their contribution.
