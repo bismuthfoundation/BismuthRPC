@@ -9,7 +9,7 @@ Wallet class for Bismuth RJson-RPC Server
 Thanks to @rvanduiven
 """
 
-#import sys
+import sys
 import os
 import json
 import re
@@ -306,6 +306,25 @@ class Wallet:
         """
         keys = self._get_keys_for_address(address)
         return keys[2]
+
+
+    def import_privkey(self, privkey, account_name='', rescan=False):
+        """
+        :param privkey:
+        :param account_name:
+        :param rescan:
+        :return:
+        """
+        # TODO: Handle rescan when balances will be ok.
+        the_key = Key(verbose=self.verbose)
+        the_key.from_privkey(privkey)
+        account = self._get_account(account_name)
+        account['addresses'].append(the_key.as_list)
+        # update reverse index
+        self.address_to_account[the_key.address] = account_name
+        self._save_rindex()
+        self._save_account(account, account_name)
+        return None
 
 
     def get_new_address(self, anaccount=''):
