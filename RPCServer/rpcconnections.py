@@ -17,7 +17,6 @@ SLEN = 10
 __version__ = '0.1.6'
 
 
-
 class Connection(object):
     """Connection to a Bismuth Node. Handles auto reconnect when needed"""
 
@@ -44,7 +43,6 @@ class Connection(object):
                 self.sdef = None
                 raise RuntimeError("Connections: {}".format(e))
 
-        
     def _send(self, data, slen=SLEN):
         """Sends something to the server"""
         self.check_connection()
@@ -70,7 +68,6 @@ class Connection(object):
             except Exception as e:
                 self.sdef = None
                 raise RuntimeError("Connections: {}".format(e))
-
 
     def _receive(self, slen=SLEN):
         """Wait for an answer, for LTIMEOUT sec."""
@@ -106,11 +103,11 @@ class Connection(object):
             self.sdef = None
             raise RuntimeError("Connections: {}".format(e))
 
-
-    def command(self,command, options=None):
+    def command(self, command, options=None):
         """
         Sends a command and return it's raw result.
         options has to be a list.
+        Each item of options will be sent separately. So If you ant to send a list, pass a list of list.
         """
         # TODO: lock, do not allow other send or receive in between
         try:
@@ -128,7 +125,6 @@ class Connection(object):
             self._send(command)
             ret = self._receive()
             return ret
-
 
     def close(self):
         """Close the socket"""

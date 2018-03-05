@@ -20,7 +20,7 @@ import io
 
 from rpckeys import Key
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 class Wallet:
@@ -56,7 +56,6 @@ class Wallet:
             print(self.index)
         #self.reindex()
 
-
     def load(self):
         """
         Loads the current wallet state or init if the dir is empty.
@@ -82,7 +81,6 @@ class Wallet:
                     self.address_to_account = json.load(json_file)
             except:
                 self.address_to_account = {}
-
 
     def _parse_accounts(self):
         """
@@ -110,8 +108,7 @@ class Wallet:
                     except Exception as e:
                         if self.verbose:
                             print("Possible error {} on file {}".format(e, afile))
-                
-                
+
     def _save_rindex(self):
         """
         Sync our reverse index to file
@@ -120,7 +117,6 @@ class Wallet:
         # TODO: Lock
         with open(rindex_fname, 'w') as outfile:  
             json.dump(self.address_to_account, outfile)
-
 
     def _check_account_name(self, account=''):
         """
@@ -136,7 +132,6 @@ class Wallet:
         if re.search('[^a-zA-Z0-9\+\/]', account) :
             raise InvalidAccountName
 
-                
     def _get_account(self, account=''):
         """
         Returns a dict with the given account info.
@@ -168,7 +163,6 @@ class Wallet:
                 res = json.load(json_file)
         return res
 
-        
     def _save_account(self, account_dict, account=''):
         """
         Saves account info back to disk
@@ -185,10 +179,8 @@ class Wallet:
         if not os.path.exists(path):
             os.mkdir(path)
         with open(fname, 'w') as outfile:  
-            json.dump(account_dict, outfile)            
-            
+            json.dump(account_dict, outfile)
         return True
-
 
     def make_unsigned_transaction(self, from_address, to_address, amount=0, data='', timestamp = 0):
         """
@@ -211,7 +203,6 @@ class Wallet:
         if len(data) > 100000:
             data = data[:100000]
         return [timestamp, str(from_address), str(to_address), amount, signature, public_key_hashed, keep, str(data)]
-
 
     def sign_transaction(self, transaction):
         """
@@ -236,7 +227,6 @@ class Wallet:
         #txid = signature_enc[:56]
         return signed
 
-
     def reindex(self):
         """
         Regenerates the inverted index self.address_to_account (rindex.json)
@@ -253,7 +243,6 @@ class Wallet:
         self._save_rindex()
         return True
 
-
     def get_account_address(self, anaccount=''):
         """
         returns the default address of the given account
@@ -264,20 +253,18 @@ class Wallet:
         # with privkey encrypted if wallet is.
         return addresses[0]
 
-
     def get_account(self, address):
         """
         returns the name of the account associated with the given address.
         """
         try:
             return self.address_to_account[address]
-        except:
+        except Exception as e:
             raise UnknownAddress
-
 
     def list_accounts(self, minconf=1):
         """
-        Returns dict that has account names as keys, account balances as values.
+        Returns dict that has account names as keys, -1 as values.
         """
         # TODO: add account balance
         try:
@@ -298,6 +285,23 @@ class Wallet:
         except:
             raise UnknownAddress
 
+    def validate_address(self, address):
+        """
+        Return information about the bismuth address.
+        See https://bitcoin.org/en/developer-reference#validateaddress
+        Adapted for Bismuth
+        :return: dict
+        """
+        info = {"address":address}
+        # If this address in our wallet?
+        if address in self.address_to_account:
+            account_name = self.address_to_account[address]
+            info['ismine'] = True
+            info['account'] = account_name
+        else:
+            info['ismine'] = False
+            info['account'] = None
+        return info
 
     def dump_privkey(self, address):
         """
@@ -305,7 +309,6 @@ class Wallet:
         """
         keys = self._get_keys_for_address(address)
         return keys[2]
-
 
     def import_privkey(self, privkey, account_name='', rescan=False):
         """
@@ -325,7 +328,6 @@ class Wallet:
         self._save_account(account, account_name)
         return None
 
-
     def get_new_address(self, anaccount=''):
         """
         returns a new address for the given account
@@ -340,15 +342,13 @@ class Wallet:
         self._save_rindex()
         return self.key.address
 
-        
     def get_addresses_by_account(self, anaccount=''):
         """
         returns the list of addresses of the given account
         """
         account = self._get_account(anaccount)
         return [address[0] for address in account['addresses']]
-        
-        
+
     def backup_wallet(self, afilename='bwallet.zip'):
         """
         Saves the whole wallet directory in a zip or tgz archive
@@ -365,8 +365,7 @@ class Wallet:
                 wallet_zip.write(os.path.join(root, file))
         wallet_zip.close()
         return True
-        
-        
+
     def dump_wallet(self, afilename='dump.txt', version='n/a'):
         """
         Sends back a list of all privkeys for the wallet.

@@ -67,8 +67,9 @@ client.request('getaccountaddress','test2')
 client.request('getaddressesbyaccount','')
 
 #client.request('getnewaddress','')
-client.request('getaddressesbyaccount','')
+client.request('validateaddress','542a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec360080fb88f7')
 
+client.request('validateaddress','142a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec360080fb88f7')
 
 # Dump the wallet keys, should create a wallet_dump.txt file in the nodeclient.py directory
 #client.request('dumpwallet', 'wallet_dump.txt')
