@@ -21,7 +21,7 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 # Interface versioning
 API_VERSION = '0.1b'
@@ -40,7 +40,6 @@ class Node:
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
         self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
-
  
     """
     All json-rpc calls are directly mapped to async methods here thereafter:
@@ -52,16 +51,14 @@ class Node:
         print("Stopping Server")
         self.connection.close(self.s)
         # TODO: Close possible open files and db connection
-        
+        #
         # TODO: Signal possible threads to terminate and wait.
         return True
-        
         # NOT So simple. Have to signal tornado app to close (and not leave the port open) see 
         # https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server
         # https://gist.github.com/wonderbeyond/d38cd85243befe863cdde54b84505784
         #sys.exit()
- 
- 
+
     @Asyncttlcache(ttl=10)
     async def getinfo(self, *args, **kwargs):
         """
@@ -82,13 +79,11 @@ class Node:
             # add extra info
             info["version"] = self.config.version
             info["errors"] = ""
-
         except Exception as e:
             info = {"version":self.config.version, "error":str(e)}
-                
         return info
     
-    
+    #@Asyncttlcache(ttl=10)
     async def getblockhash(self, *args, **kwargs):
         """
         Returns the hash of a given block_height
@@ -104,8 +99,8 @@ class Node:
         except Exception as e:
             block = {"version":self.config.version, "error":str(e)}
         return block
-        
-    
+
+    @Asyncttlcache(ttl=10)
     async def getrawmempool(self, *args, **kwargs):
         """
         WIP
@@ -122,7 +117,7 @@ class Node:
             mempool = {"version":self.config.version, "error":str(e)}
         return mempool
         
-        
+    @Asyncttlcache(ttl=10)
     async def getdifficulty(self, *args, **kwargs):
         """
         Returns the current network difficulty
@@ -133,8 +128,7 @@ class Node:
         except Exception as e:
             diff = {"version":self.config.version, "error":str(e)}
         return diff
-    
-    
+
     async def getblocknumber(self, *args, **kwargs):
         """
         Deprecated. Removed in version 0.7. Use getblockcount. 
@@ -142,7 +136,6 @@ class Node:
         """
         info = await self.getblockcount()
         return info
-
 
     # No need to cache since it's using cached getinfo()
     async def getblockcount(self, *args, **kwargs):
@@ -156,7 +149,6 @@ class Node:
         except Exception as e:
             error = {"version":self.config.version, "error":str(e)}
             return error
-
 
     async def getaccountaddress(self, *args, **kwargs):
         """(account)
@@ -172,7 +164,6 @@ class Node:
             error = {"version":self.config.version, "error":str(e)}                
         return error
 
-
     async def getaccount(self, *args, **kwargs):
         """(address)
         returns the name of the account associated with the given address.
@@ -184,7 +175,6 @@ class Node:
             error = {"version":self.config.version, "error":str(e)}
         return error
 
-
     async def dumpprivkey(self, *args, **kwargs):
         """(address)
         returns the private key corresponding to an address. (But does not remove it from the wallet.)
@@ -195,7 +185,6 @@ class Node:
         except Exception as e:
             error = {"version":self.config.version, "error":str(e)}
         return error
-
 
     async def importprivkey(self, *args, **kwargs):
         """(privkey, account, rescan)
@@ -215,7 +204,6 @@ class Node:
             error = {"version":self.config.version, "error":str(e)}
         return error
 
-
     async def getnewaddress(self, *args, **kwargs):
         """(account)
         Returns a new bitcoin address for receiving payments. 
@@ -230,7 +218,6 @@ class Node:
             error = {"version":self.config.version, "error":str(e)}                
         return error
 
-        
     async def backupwallet(self, *args, **kwargs):
         """(file_name)
         Backups the whole wallet directory in then given archive filename
@@ -241,7 +228,6 @@ class Node:
         except Exception as e:
             error = {"version":self.config.version, "error":str(e)}                
         return error                
-        
 
     async def dumpwallet(self, *args, **kwargs):
         """(file_name)
@@ -253,7 +239,6 @@ class Node:
         except Exception as e:
             error = {"version":self.config.version, "error":str(e)}                
         return error
-
 
     async def createrawtransaction(self, *args, **kwargs):
         """
@@ -273,7 +258,6 @@ class Node:
         except Exception as e:
             return {"version": self.config.version, "error": str(e)}
 
-
     async def signrawtransaction(self, *args, **kwargs):
         """
         Bismuthd: Adds signature to a raw transaction and returns the resulting raw transaction.
@@ -285,7 +269,6 @@ class Node:
         except Exception as e:
             print(e)
             return {"version": self.config.version, "error": str(e)}
-
 
     async def sendfrom(self, *args, **kwargs):
         """
@@ -299,24 +282,99 @@ class Node:
             # - send to the node and get txid (self)
             txid = 'mockup tx'
             return txid
-
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
 
+    # @Asyncttlcache(ttl=10)
+    async def getreceivedbyaddress(self, *args, **kwargs):
+        """
+        Takes a single address, a min conf count, and sends back the total received amount (!= balance).
+        """
+        try:
+            minconf = 1
+            if len(args) > 2:
+                minconf = args[2]
+            address = args[1]
+            total = self.connection.command("api_getreceived", [[address], minconf])
+            return total
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
 
+    # @Asyncttlcache(ttl=10)
+    async def getreceivedbyaccount(self, *args, **kwargs):
+        """
+        Takes a single address, a min conf count, and sends back the total received amount (!= balance).
+        """
+        try:
+            minconf = 1
+            if len(args) > 2:
+                minconf = args[2]
+            account = args[1]
+            addresses = await self.getaddressesbyaccount(account)
+            total = self.connection.command("api_getreceived", [addresses, minconf])
+            return total
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
+
+    # @Asyncttlcache(ttl=10)
+    async def listreceivedbyaddress(self, *args, **kwargs):
+        """
+        Takes a single address, a min conf count, and sends back the total received amount (!= balance).
+        """
+        try:
+            minconf = 1
+            if len(args) > 2:
+                minconf = args[2]
+            includeempty = False
+            if len(args) > 3:
+                includeempty = args[3]
+            address = args[1]
+            # mockup: [{"address":"moPhStktszZGwtVjziE7eoQ76ATQqfhMtK","account":"","amount":10.00000000,"confirmations":1,"label":"","txids":["82790ce7d1fd0df0bc2ffd3cdfdd452e36a32b90885984213a9424f083f74df4"]}]
+            all = self.connection.command("api_listreceived", [[address], minconf, includeempty])
+            return all
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
+
+    # @Asyncttlcache(ttl=10)
+    async def listreceivedbyaccount(self, *args, **kwargs):
+        """
+        Takes a single address, a min conf count, and sends back the total received amount (!= balance).
+        """
+        try:
+            minconf = 1
+            if len(args) > 2:
+                minconf = args[2]
+            includeempty = False
+            if len(args) > 3:
+                includeempty = args[3]
+            account = args[1]
+            addresses = await self.getaddressesbyaccount(account)
+            all = self.connection.command("api_listreceived", [addresses, minconf, includeempty])
+            return all
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
+
+    # @Asyncttlcache(ttl=10)
     async def getbalance(self, *args, **kwargs):
         """
-        Returns the balance of the whole wallet, or of a specific account
+        Returns the balance of a specific account (default account if empty)
         """
-        try:       
-            # TODO: mockup
-            balance = 99.99996160
+        try:
+            minconf = 1
+            if len(args) > 2:
+                minconf = args[2]
+            account = args[1]
+            addresses = await self.getaddressesbyaccount(account)
+            balance = self.connection.command("api_getbalance", [addresses, minconf])
             return balance
-
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
 
-
+    # @Asyncttlcache(ttl=10)
     async def listaccounts(self, *args, **kwargs):
         """
         List all accounts and balance of the wallet
@@ -325,20 +383,47 @@ class Node:
             minconf = 1
             if len(args)>1:
                 minconf = args[1]
-            return self.wallet.list_accounts(minconf)
+            accounts = self.wallet.list_accounts(minconf)
+            balances= {}
+            # TODO: better reuse the generator for rpcwallet and use dict comprehension, or pass getbalance as a callback
+            for account in accounts:
+                balances[account] = await self.getbalance(account, minconf)
+            return balances
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
 
-
-    async def getaccount(self, *args, **kwargs):
+    # @Asyncttlcache(ttl=10)
+    async def validateaddress(self, *args, **kwargs):
         """
-        Get the account of the provided address args[1]
+        Return information about bismuthaddress. https://bitcoin.org/en/developer-reference#validateaddress
+        for Bismuth, returns a different info. TODO To be specified
         """
         try:
-            return self.wallet.get_account(args[1])
+            address = args[1]
+            # returns offline and local wallet info
+            info = self.wallet.validate_address(address)
+            # Then ask for online info like possible pubkey
+            try:
+                online = self.connection.command("api_getaddressinfo", [address])
+                info.update(online)
+            except Exception as e:
+                pass
+            return info
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
 
+    @Asyncttlcache(ttl=10)
+    async def getpeerinfo(self, *args, **kwargs):
+        """
+        Returns data about each connected node.
+        See https://bitcoin.org/en/developer-reference#getpeerinfo
+        """
+        try:
+            info = self.connection.command("api_getpeerinfo")
+            return info
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
 
     async def getaddressesbyaccount(self, *args, **kwargs):
         """
@@ -350,19 +435,6 @@ class Node:
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
 
-
-    async def listreceivedbyaddress(self, *args, **kwargs):
-        """
-        List the incoming transactions by address, for all adresses of the wallet.
-        """
-        try:
-            # TODO: mockup
-            list_received_by_address = [{"address":"moPhStktszZGwtVjziE7eoQ76ATQqfhMtK","account":"","amount":10.00000000,"confirmations":1,"label":"","txids":["82790ce7d1fd0df0bc2ffd3cdfdd452e36a32b90885984213a9424f083f74df4"]}]
-            return list_received_by_address
-        except Exception as e:
-            return {"version":self.config.version, "error":str(e)}
-
-
     async def listsinceblock(self, *args, **kwargs):
         """
         List the transactions since the provided blockheight.
@@ -373,8 +445,7 @@ class Node:
             return list_since_block
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
-        
-        
+
     """
     Here comes extra commands, that are *not* bitcoind compatible
     """   
@@ -387,4 +458,3 @@ class Node:
             return self.wallet.reindex()
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
-    

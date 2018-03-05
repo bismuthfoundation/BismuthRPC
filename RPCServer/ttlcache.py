@@ -25,6 +25,8 @@ from datetime import datetime, timedelta
 
 __version__ = '0.0.1'
 
+# TODO: BIG REWORK TODO HERE, caches func call, but not the params!
+
 
 class Asyncttlcache(object):
     def __init__(self, *args, **kwargs):

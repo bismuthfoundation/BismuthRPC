@@ -63,12 +63,8 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
   Thanks @iyomisc
 
-## Working on
 
-* stop  -  Stop bismuthd server.
-
-* getrawmempool  -   * version 0.7 Returns all transaction ids in memory pool 
-  (@iyomisc)
+## Implemented, need proper node api command
 
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
   bismuthd specifics: if account is not specified, returns the balance of the default '' account.  
@@ -77,9 +73,39 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 
 * listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values.   
   See caching or management of balance update.
-  
+
+* getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. 
+  If (account) not provided return will include transactions to default account only. 
+
 * getreceivedbyaddress  -  (bismuthaddress) (minconf=1)  -  Returns the amount received by (bismuthaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.  
   Needs a new node command. TODO: suggest api_* commands and module to node.py and matching rights management.   
+
+* listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
+
+* listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute listreceivedbyaddress 0 true
+
+* getpeerinfo  -  Returns data about each connected node.  
+  See https://bitcoin.org/en/developer-reference#getpeerinfo  
+  This will need some adjustments and a new command on node.py
+
+* validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
+  See https://bitcoin.org/en/developer-reference#validateaddress
+
+## Implemented Specific Bismuthd commands
+
+These commands are not known nor used by bitcoind
+
+* reindexwallet - force a rebuild of the indexed index {address: account}  
+
+* rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
+
+
+## Working on
+
+* stop  -  Stop bismuthd server.
+
+* getrawmempool  -   * Returns all transaction ids in memory pool 
+  (@iyomisc)
 
 @iyomisc?
 * getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
@@ -88,9 +114,20 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
 
 
-* getpeerinfo  -   * version 0.7 Returns data about each connected node.  
-  See https://bitcoin.org/en/developer-reference#getpeerinfo  
-  This will need some adjustments and a new command on node.py
+* sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).     
+  sends from the first address of the given account.   
+  Bismuthd specifics: comment id converted to "openfield data" and will be part of the transaction. comment-to is ignored.  
+  Uses "mpinsert" node command, since "txsend" is not secure: it sends the private key to the node 
+  
+* sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers  
+  Bismuth does not support one to many transactions. Will be converted to many transactions, and return a list of transaction id.  
+  Use of this command with bismuthd is better be avoided.
+   
+* sendtoaddress  -  (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.   
+  Sends from main account default address
+
+* gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"  
+  Needs additionnal command on node.py
 
 See also new commands:
 
@@ -100,12 +137,10 @@ See also new commands:
 * getwalletinfo https://bitcoin.org/en/developer-reference#getwalletinfo
 
 
-
 ## Help Appreciated
 
 The following commands are self contained and should be OK to implement in a safe a independant way.
 I can do it, but it's always nice not to be alone :)
-
 
 The 4 following commands are to be coded in one go by the same person.
 See rpckeys.py and try_keys.py for the encryption/decryption logic.
@@ -129,25 +164,6 @@ Tell me via an issue so I know tyou're working on it.
 
 * help  -  (command)  -  List commands, or get help for a command.
 
-* getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. If (account) not provided return will include all transactions to all accounts. (version 0.3.24) 
-* listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
-* listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute listreceivedbyaddress 0 true
-
-* sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).     
-  sends from the first address of the given account.   
-  Bismuthd specifics: comment id converted to "openfield data" and will be part of the transaction. comment-to is ignored.  
-  Uses "mpinsert" node command, since "txsend" is not secure: it sends the private key to the node 
-  
-* sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers  
-  Bismuth does not support one to many transactions. Will be converted to many transactions, and return a list of transaction id.  
-  Use of this command with bismuthd is better be avoided.
-   
-* sendtoaddress  -  (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.   
-  Sends from main account default address
-
-* gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"  
-  Needs additionnal command on node.py
-
 * gettxout  -  (txid) (n) (includemempool=true)  -  Returns details about an unspent transaction output (UTXO) 
 * gettxoutsetinfo  -   * Returns statistics about the unspent transaction output (UTXO) set 
 * listsinceblock  -  (blockhash) (target-confirmations)  -  Get all transactions in blocks since block (blockhash), or all transactions if omitted. (target-confirmations) intentionally does not affect the list of returned transactions, but only affects the returned "lastblock" value.(1) 
@@ -160,23 +176,10 @@ Maybe implement with variations (use json instead of hexstring).
 * sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
 * decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
 * getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
- 
-  
-
-* validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
-
+   
 * signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
 * verifymessage  -  (bismuthaddress) (signature) (message)  -  Verify a signed message. 
 
-
-
-## Specific Bismuthd commands
-
-These commands are not known nor used by bitcoind
-
-* reindexwallet - force a rebuild of the indexed index {address: account}  
-
-* rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
 
 
 
