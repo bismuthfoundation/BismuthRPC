@@ -5,7 +5,9 @@ Json over sockets
 This file is no more compatible with the Bismuth code, it's been converted to a class
 """
 
-import select, json, platform, time, sys
+import json
+import sys
+import os
 import socket
 
 # Logical timeout
@@ -43,23 +45,30 @@ class Connection(object):
                 self.sdef = None
                 raise RuntimeError("Connections: {}".format(e))
 
-    def _send(self, data, slen=SLEN):
+    def _send(self, data, slen=SLEN, retry=True):
         """Sends something to the server"""
         self.check_connection()
         try:
             self.sdef.settimeout(LTIMEOUT)
             # Make sure the packet is sent in one call
-            res = self.sdef.sendall(str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen)+str(json.dumps(data)).encode("utf-8"))
+            sdata = str(json.dumps(data))
+            res = self.sdef.sendall(str(len(sdata)).encode("utf-8").zfill(slen)+sdata.encode("utf-8"))
+            # res is always 0 on linux
             if self.verbose:
-                print("send ", data, "sent",res)
+                print("send ", data)
             return True
         except Exception as e:
             # send failed, try to reconnect
-            #TODO: handle tries #
+            # TODO: handle tries #
             self.sdef = None
-            if self.verbose:
-                print("Send failed ({}), trying to reconnect".format(e))
-            self.check_connection()
+            if retry:
+                if self.verbose:
+                    print("Send failed ({}), trying to reconnect".format(e))
+                self.check_connection()
+            else:
+                if self.verbose:
+                    print("Send failed ({}), not retrying.".format(e))
+                return False
             try:
                 self.sdef.settimeout(LTIMEOUT)
                 # Make sure the packet is sent in one call
@@ -114,15 +123,23 @@ class Connection(object):
             self._send(command)
             if options:
                 for option in options:
-                    self._send(option)
-            ret = self.receive()
+                    self._send(option, retry=False)
+            ret = self._receive()
             return ret
-        except:
+        except Exception as e:
+            """
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            """
             # TODO : better handling of tries and delay between
             if self.verbose:
-                print("Command failed, trying to reconnect")
+                print("Error <{}> sending command, trying to reconnect.".format(e))
             self.check_connection()
             self._send(command)
+            if options:
+                for option in options:
+                    self._send(option, retry=False)
             ret = self._receive()
             return ret
 

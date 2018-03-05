@@ -48,7 +48,7 @@ client.request('getinfo')
 
 client.request('getblockcount')
 
-client.request('listaccounts')
+#client.request('listaccounts')
 #time.sleep(11)
 # but not this one
 #client.request('getinfo')
@@ -68,7 +68,6 @@ client.request('getaddressesbyaccount','')
 
 #client.request('getnewaddress','')
 client.request('validateaddress','542a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec360080fb88f7')
-
 client.request('validateaddress','142a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec360080fb88f7')
 
 # Dump the wallet keys, should create a wallet_dump.txt file in the nodeclient.py directory
