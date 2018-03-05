@@ -292,7 +292,12 @@ class Wallet:
         Adapted for Bismuth
         :return: dict
         """
-        info = {"address":address}
+        # Format check
+        if re.match("[abcdef0123456789]{56}", address):
+            info = {'address': address, 'valid': True}
+        else:
+            info = {'address': address, 'valid': False}
+            return info
         # If this address in our wallet?
         if address in self.address_to_account:
             account_name = self.address_to_account[address]
