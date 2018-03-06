@@ -214,11 +214,12 @@ class Wallet:
         address = transaction[1]
         if float(transaction[3]) < 0:
             raise NegativeAmount
-        signed_part = (transaction[:4] + transaction[6:8]) # This removes signature and "hashed" pubkey
+        # signed_part has to be a tuple, or the signature won't match
+        signed_part = tuple(transaction[:4] + transaction[6:8]) # This removes signature and "hashed" pubkey
         # Find the keys and init the crypto thingy
         the_key = Key()
         the_key.from_list(self._get_keys_for_address(address))
-        # signed_part has to be a tuple, or the signature won't match
+        #print('signed part', signed_part)
         signature_enc = the_key.sign(signed_part, base64_output=True)
         public_key_hashed = the_key.hashed_pubkey
         signed = list(transaction)
@@ -266,7 +267,6 @@ class Wallet:
         """
         Returns dict that has account names as keys, -1 as values.
         """
-        # TODO: add account balance
         try:
             accounts = {account_name: -1 for account_name, _ in self._parse_accounts()}
             return accounts
@@ -276,14 +276,15 @@ class Wallet:
     def _get_keys_for_address(self, address):
         """Finds the account of the address, then it's keys"""
         try:
+            print(self.address_to_account[address])
             account = self._get_account(self.address_to_account[address])
             for keys in account['addresses']:
                 # keys is [address, encrypted, privkey, pubkey]
                 if keys[0] == address:
                     return keys
-            raise UnknownAddress
-        except:
-            raise UnknownAddress
+            raise ValueError("Unknown address")
+        except Exception as e:
+            raise ValueError("Unknown address")
 
     def validate_address(self, address):
         """
@@ -293,7 +294,7 @@ class Wallet:
         :return: dict
         """
         # Format check
-        if re.match("[abcdef0123456789]{56}", address):
+        if re.match('[abcdef0123456789]{56}', address):
             info = {'address': address, 'valid': True}
         else:
             info = {'address': address, 'valid': False}
@@ -431,7 +432,7 @@ class InvalidPath(Exception):
 class UnknownAddress(Exception):
     code = -33003
     message = "Unknown Address"
-    data = None
+    data = "Unknown Address"
 
 
 class NegativeAmount(Exception):

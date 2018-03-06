@@ -81,7 +81,7 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   See caching or management of balance update.
 
 
-## Implemented, need proper node api command to dbe coded
+## Implemented, need proper node api command to be coded
 
 * getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. 
   If (account) not provided return will include transactions to default account only. 
@@ -105,11 +105,11 @@ These commands are not known nor used by bitcoind
 
 * reindexwallet - force a rebuild of the indexed index {address: account}  
 
-* rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
-
 * getbalancebyaddress  -  (bismuth address) (minconf=1)  -  Returns the total balance of the given address, with minconf confirmations.    
   Does NOT includes transactions or fees from mempool. Minimum minconf value is 1.
 
+* rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
+  Update: No need to, we ask the node the get updated balances, no need to cache and risk some divergence.
 
 ## Working on
 
@@ -127,8 +127,8 @@ These commands are not known nor used by bitcoind
 
 * sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).     
   sends from the first address of the given account.   
-  Bismuthd specifics: comment id converted to "openfield data" and will be part of the transaction. comment-to is ignored.  
-  Uses "mpinsert" node command, since "txsend" is not secure: it sends the private key to the node 
+  Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.  
+  Uses "mpinsert" node command, since "txsend" is not secure: it sends the private key to the node.
   
 * sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers  
   Bismuth does not support one to many transactions. Will be converted to many transactions, and return a list of transaction id.  
@@ -139,6 +139,14 @@ These commands are not known nor used by bitcoind
 
 * gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"  
   Needs additionnal command on node.py
+  
+"rawtransaction" would be objects like line of mempool. Can contain a signature or not.  
+Maybe implement with variations (use json instead of hexstring).  
+
+* sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
+* decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
+* getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
+
 
 See also new commands:
 
@@ -175,24 +183,15 @@ Tell me via an issue so I know tyou're working on it.
 
 * help  -  (command)  -  List commands, or get help for a command.
 
-* gettxout  -  (txid) (n) (includemempool=true)  -  Returns details about an unspent transaction output (UTXO) 
-* gettxoutsetinfo  -   * Returns statistics about the unspent transaction output (UTXO) set 
 * listsinceblock  -  (blockhash) (target-confirmations)  -  Get all transactions in blocks since block (blockhash), or all transactions if omitted. (target-confirmations) intentionally does not affect the list of returned transactions, but only affects the returned "lastblock" value.(1) 
 * listtransactions  -  (account) (count=10) (from=0)  -  Returns up to (count) most recent transactions skipping the first (from) transactions for account (account). If (account) not provided it'll return recent transactions from all accounts.
 * listunspent  -  (minconf=1) (maxconf=999999)  -  version 0.7 Returns array of unspent transaction inputs in the wallet. 
-
-"rawtransaction" would be objects like line of mempool. Can contain a signature or not.  
-Maybe implement with variations (use json instead of hexstring).  
-
-* sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
-* decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
-* getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
-   
+ 
 * signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
 * verifymessage  -  (bismuthaddress) (signature) (message)  -  Verify a signed message. 
 
-
-
+* getmempoolinfo  -  returns information about the node’s current transaction memory pool.  
+  https://bitcoin.org/en/developer-reference#getmempoolinfo
 
 ## Undecided
 
@@ -223,6 +222,9 @@ Maybe implement with variations (use json instead of hexstring).
 
 
 ## These commands may have no sense in the Bismuth context.
+
+* gettxout  -  (txid) (n) (includemempool=true)  -  Returns details about an unspent transaction output (UTXO) 
+* gettxoutsetinfo  -   * Returns statistics about the unspent transaction output (UTXO) set 
 
 * setgenerate  -  (generate) (genproclimit)  -  (generate) is true or false to turn generation on or off.Generation is limited to (genproclimit) processors, -1 is unlimited. 
 * getgenerate  -   * Returns true or false whether bitcoind is currently generating hashes 
