@@ -273,6 +273,12 @@ class Node:
     async def sendfrom(self, *args, **kwargs):
         """
         Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful.
+        * sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).
+        sends from the first address of the given account.
+        Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.
+        Uses "mpinsert" node command internally , since "txsend" is not secure: it sends the private key to the node.
+        TODO: mpinsert will have to return a proper boolean or message for Ok/Ko
+        Could be worked on with mempool modularization
         """
         try:
             # TODO - (fromaccount)(tobismuthaddress)(amount)(minconf=1)(comment)(comment - to)
@@ -280,7 +286,21 @@ class Node:
             # - check balance with minconf (self)
             # - build a signed rawtransaction from the params (ask wallet, it got the keys)
             # - send to the node and get txid (self)
-            txid = 'mockup tx'
+            address, to_address, amount = args[1:4]
+            minconf = 1
+            if len(args) > 4:
+                minconf = args[4]
+            if minconf < 1:
+                minconf = 1
+            # TODO: minconf is ignored for now, we just transmit to the node.
+            comment = ''
+            if len(args) > 5:
+                comment = args[5]
+            # Create the raw transaction
+            transaction = self.wallet.sign_transaction(self.wallet.make_unsigned_transaction(address, to_address, amount, comment))
+            void = self.connection.command("mpinsert", [[transaction]])
+            print("mpinsert res", void)
+            txid = transaction[4][:56]
             return txid
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
@@ -294,6 +314,8 @@ class Node:
             minconf = 1
             if len(args) > 2:
                 minconf = args[2]
+            if minconf < 1:
+                minconf = 1
             address = args[1]
             total = self.connection.command("api_getreceived", [[address], minconf])
             return total
@@ -310,6 +332,8 @@ class Node:
             minconf = 1
             if len(args) > 2:
                 minconf = args[2]
+            if minconf < 1:
+                minconf = 1
             account = args[1]
             addresses = await self.getaddressesbyaccount(self, account)
             total = self.connection.command("api_getreceived", [addresses, minconf])
@@ -327,6 +351,8 @@ class Node:
             minconf = 1
             if len(args) > 2:
                 minconf = args[2]
+            if minconf < 1:
+                minconf = 1
             includeempty = False
             if len(args) > 3:
                 includeempty = args[3]
@@ -347,6 +373,8 @@ class Node:
             minconf = 1
             if len(args) > 2:
                 minconf = args[2]
+            if minconf < 1:
+                minconf = 1
             includeempty = False
             if len(args) > 3:
                 includeempty = args[3]
