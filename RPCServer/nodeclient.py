@@ -311,7 +311,7 @@ class Node:
             if len(args) > 2:
                 minconf = args[2]
             account = args[1]
-            addresses = await self.getaddressesbyaccount(account)
+            addresses = await self.getaddressesbyaccount(self, account)
             total = self.connection.command("api_getreceived", [addresses, minconf])
             return total
         except Exception as e:
@@ -351,7 +351,7 @@ class Node:
             if len(args) > 3:
                 includeempty = args[3]
             account = args[1]
-            addresses = await self.getaddressesbyaccount(account)
+            addresses = await self.getaddressesbyaccount(self, account)
             all = self.connection.command("api_listreceived", [addresses, minconf, includeempty])
             return all
         except Exception as e:
@@ -367,9 +367,30 @@ class Node:
             minconf = 1
             if len(args) > 2:
                 minconf = args[2]
+            if minconf < 1:
+                minconf = 1
+            print('getb args', args)
             account = args[1]
-            addresses = await self.getaddressesbyaccount(account)
+            addresses = await self.getaddressesbyaccount(self, account)
+            print("getbalance", account, addresses, minconf)
             balance = self.connection.command("api_getbalance", [addresses, minconf])
+            return balance
+        except Exception as e:
+            return {"version":self.config.version, "error":str(e)}
+
+    async def getbalancebyaddress(self, *args, **kwargs):
+        """
+        Returns the total balance of a specific address
+        This is an extra command, not included in default bitcoin json-rpc
+        """
+        try:
+            minconf = 1
+            if len(args) > 2:
+                minconf = args[2]
+            if minconf < 1:
+                minconf = 1
+            address = args[1]
+            balance = self.connection.command("api_getbalance", [[address], minconf])
             return balance
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
@@ -383,11 +404,15 @@ class Node:
             minconf = 1
             if len(args)>1:
                 minconf = args[1]
-            accounts = self.wallet.list_accounts(minconf)
+            if minconf < 1:
+                minconf = 1
+            accounts = self.wallet.list_accounts()
             balances= {}
             # TODO: better reuse the generator for rpcwallet and use dict comprehension, or pass getbalance as a callback
             for account in accounts:
-                balances[account] = await self.getbalance(account, minconf)
+                print("Account", account)
+                # when called from here, self is not passed (but it is when called from the server, so we add it to keep args management coherent.
+                balances[account] = await self.getbalance(self, account, minconf)
             return balances
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
