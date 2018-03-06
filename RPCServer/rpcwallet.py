@@ -262,7 +262,7 @@ class Wallet:
         except Exception as e:
             raise UnknownAddress
 
-    def list_accounts(self, minconf=1):
+    def list_accounts(self):
         """
         Returns dict that has account names as keys, -1 as values.
         """

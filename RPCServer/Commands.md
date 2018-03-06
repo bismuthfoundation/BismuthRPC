@@ -62,34 +62,42 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   
 * getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
   Thanks @iyomisc
+  
+## Implemented, need api handler in node but this node side code is already coded and successfully tested
 
-
-## Implemented, need proper node api command
+* validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
+  See https://bitcoin.org/en/developer-reference#validateaddress
 
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
   bismuthd specifics: if account is not specified, returns the balance of the default '' account.  
-  Needs a new node command. TODO: suggest api_* commands and module to node.py and matching rights management.  
+  Does NOT includes transactions or fees from mempool. Minimum minconf value is 1.  
   An account can have several addresses: send a list to the node, not just a single address.
+
+* getpeerinfo  -  Returns data about each connected node.  
+  See https://bitcoin.org/en/developer-reference#getpeerinfo  
+  This will need some adjustments.
 
 * listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values.   
   See caching or management of balance update.
 
+
+## Implemented, need proper node api command to dbe coded
+
 * getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. 
   If (account) not provided return will include transactions to default account only. 
 
-* getreceivedbyaddress  -  (bismuthaddress) (minconf=1)  -  Returns the amount received by (bismuthaddress) in transactions with at least (minconf) confirmations. It correctly handles the case where someone has sent to the address in multiple transactions. Keep in mind that addresses are only ever used for receiving transactions. Works only for addresses in the local wallet, external addresses will always show 0.  
-  Needs a new node command. TODO: suggest api_* commands and module to node.py and matching rights management.   
+* getreceivedbyaddress  -  (bismuthaddress) (minconf=1)  -  Returns the amount received by (bismuthaddress) in transactions with at least (minconf) confirmations. 
+  It correctly handles the case where someone has sent to the address in multiple transactions. 
+  Keep in mind that addresses are only ever used for receiving transactions. 
+  bitcoin version: Works only for addresses in the local wallet, external addresses will always show 0.
+  bismuthd version: Asks the node, so it works for any address     
 
-* listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "account"&nbsp;: the account of the receiving addresses, "amount"&nbsp;: total amount received by addresses with this account, "confirmations"&nbsp;: number of confirmations of the most recent transaction included
+* listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing:   
+  "account" : the account of the receiving addresses, "amount" : total amount received by addresses with this account, "confirmations": number of confirmations of the most recent transaction included
 
-* listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing: "address"&nbsp;: receiving address, "account"&nbsp;: the account of the receiving address, "amount"&nbsp;: total amount received by the address, "confirmations"&nbsp;: number of confirmations of the most recent transaction included, To get a list of accounts on the system, execute listreceivedbyaddress 0 true
-
-* getpeerinfo  -  Returns data about each connected node.  
-  See https://bitcoin.org/en/developer-reference#getpeerinfo  
-  This will need some adjustments and a new command on node.py
-
-* validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
-  See https://bitcoin.org/en/developer-reference#validateaddress
+* listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing:  
+  "address" : receiving address, "account" : the account of the receiving address, "amount" : total amount received by the address, "confirmations": number of confirmations of the most recent transaction included.  
+  To get a list of accounts on the system, execute listreceivedbyaddress 0 true
 
 ## Implemented Specific Bismuthd commands
 
@@ -98,6 +106,9 @@ These commands are not known nor used by bitcoind
 * reindexwallet - force a rebuild of the indexed index {address: account}  
 
 * rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
+
+* getbalancebyaddress  -  (bismuth address) (minconf=1)  -  Returns the total balance of the given address, with minconf confirmations.    
+  Does NOT includes transactions or fees from mempool. Minimum minconf value is 1.
 
 
 ## Working on
@@ -210,7 +221,8 @@ Maybe implement with variations (use json instead of hexstring).
 
 * getmemorypool  -  (data)  -  Replaced in v0.7.0 with getblocktemplate, submitblock, getrawmempool 
 
-These commands may have no sense in the Bismuth context.
+
+## These commands may have no sense in the Bismuth context.
 
 * setgenerate  -  (generate) (genproclimit)  -  (generate) is true or false to turn generation on or off.Generation is limited to (genproclimit) processors, -1 is unlimited. 
 * getgenerate  -   * Returns true or false whether bitcoind is currently generating hashes 
