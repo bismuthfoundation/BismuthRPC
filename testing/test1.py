@@ -81,7 +81,7 @@ client.request('getbalancebyaddress','340c195f768be515488a6efedb958e135150b2ef3e
 """
 {"result":{"":99.99996160},"error":null,"id":3}
 """
-client.request('sendfrom','0634b5046b1e2b6a69006280fbe91951d5bb5604c6f469baa2bcd840', '0634b5046b1e2b6a69006280fbe91951d5bb5604c6f469baa2bcd840', 1.0, 1, 'json-rpc test')
+client.request('sendfrom','542a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec360080fb88f7', '542a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec360080fb88f7', 1.0, 1, 'json-rpc test')
 
 #client.request('getaccount','moPhStktszZGwtVjziE7eoQ76ATQqfhMtK') # no name for default account
 """
