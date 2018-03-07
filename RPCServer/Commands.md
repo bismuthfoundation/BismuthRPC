@@ -80,6 +80,14 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * listaccounts  -  (minconf=1)  -  Returns Object that has account names as keys, account balances as values.   
   See caching or management of balance update.
 
+* sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).     
+  sends from the first address of the given account.   
+  Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.  
+  Uses "mpinsert" node command, since "txsend" is not secure: it sends the private key to the node.
+  
+* sendtoaddress  -  (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.   
+  Sends from main account default address
+
 
 ## Implemented, need proper node api command to be coded
 
@@ -98,6 +106,8 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing:  
   "address" : receiving address, "account" : the account of the receiving address, "amount" : total amount received by the address, "confirmations": number of confirmations of the most recent transaction included.  
   To get a list of accounts on the system, execute listreceivedbyaddress 0 true
+  
+  
 
 ## Implemented Specific Bismuthd commands
 
@@ -123,19 +133,6 @@ These commands are not known nor used by bitcoind
 * getblock  -  (hash)  -  Returns information about the block with the given hash.  
   https://bitcoin.org/en/developer-reference#getblock
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
-
-
-* sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).     
-  sends from the first address of the given account.   
-  Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.  
-  Uses "mpinsert" node command, since "txsend" is not secure: it sends the private key to the node.
-  
-* sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers  
-  Bismuth does not support one to many transactions. Will be converted to many transactions, and return a list of transaction id.  
-  Use of this command with bismuthd is better be avoided.
-   
-* sendtoaddress  -  (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.   
-  Sends from main account default address
 
 * gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"  
   Needs additionnal command on node.py
@@ -219,6 +216,11 @@ Tell me via an issue so I know tyou're working on it.
 * move  -  (fromaccount) (toaccount) (amount) (minconf=1) (comment)  -  Move from one account in your wallet to another 
 
 * getmemorypool  -  (data)  -  Replaced in v0.7.0 with getblocktemplate, submitblock, getrawmempool 
+
+* sendmany  -  (fromaccount) {address:amount,...} (minconf=1) (comment)  -  amounts are double-precision floating point numbers  
+  Bismuth does not support one to many transactions. Will be converted to many transactions, and return a list of transaction id.  
+  Deprecated for bitcoin, so won't implement.
+
 
 
 ## These commands may have no sense in the Bismuth context.

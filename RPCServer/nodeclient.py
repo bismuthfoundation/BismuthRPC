@@ -10,7 +10,7 @@ Also handles wallet and accounts
 
 # Generic modules
 #import socket, sys
-
+import re
 
 # Bismuth specific modules
 from rpcconnections import Connection
@@ -267,8 +267,24 @@ class Node:
         try:
             return self.wallet.sign_transaction(args[1:])
         except Exception as e:
-            print(e)
+            #print(e)
             return {"version": self.config.version, "error": str(e)}
+
+    async def getrawtransaction(self, *args, **kwargs):
+        """
+        (txid) (format)  -  Returns raw transaction representation for given transaction id, in json
+        Bismuthd : kept format param for compatibility, but always returns a json output or Null if tx was not found
+        """
+        try:
+            transaction = args[1]
+            # check tx format?
+            if not re.match('[a..zA..Z0..9\+/=]{56}', transaction):
+                raise ValueError("Bad Transaction format")
+            return self.connection.command("api_gettransaction", [transaction])
+        except Exception as e:
+            #print(e)
+            return {"version": self.config.version, "error": str(e)}
+
 
     async def sendfrom(self, *args, **kwargs):
         """
@@ -281,11 +297,6 @@ class Node:
         Could be worked on with mempool modularization
         """
         try:
-            # TODO - (fromaccount)(tobismuthaddress)(amount)(minconf=1)(comment)(comment - to)
-            # comment is openfield data, comment-to is ignored
-            # - check balance with minconf (self)
-            # - build a signed rawtransaction from the params (ask wallet, it got the keys)
-            # - send to the node and get txid (self)
             address, to_address, amount = args[1:4]
             minconf = 1
             if len(args) > 4:
@@ -299,7 +310,35 @@ class Node:
             # Create the raw transaction
             transaction = self.wallet.sign_transaction(self.wallet.make_unsigned_transaction(address, to_address, amount, comment))
             void = self.connection.command("mpinsert", [[transaction]])
-            print("mpinsert res", void)
+            # TODO: when implemented node side, use returned status code
+            #print("mpinsert res", void)
+            txid = transaction[4][:56]
+            return txid
+        except Exception as e:
+            return {"version":self.config.version, "error":str(e)}
+
+    async def sendtoaddress(self, *args, **kwargs):
+        """
+        (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.
+        Sends from main account default address
+        Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.
+        Uses "mpinsert" node command internally , since "txsend" is not secure: it sends the private key to the node.
+        TODO: mpinsert will have to return a proper boolean or message for Ok/Ko
+        Could be worked on with mempool modularization
+        """
+        try:
+            to_address, amount = args[1:3]
+            # TODO: minconf is ignored for now, we just transmit to the node.
+            comment = ''
+            if len(args) > 3:
+                comment = args[3]
+            # defualt account address
+            address = self.wallet.get_account_address('')
+            # Create the raw transaction
+            transaction = self.wallet.sign_transaction(self.wallet.make_unsigned_transaction(address, to_address, amount, comment))
+            void = self.connection.command("mpinsert", [[transaction]])
+            # TODO: when implemented node side, use returned status code
+            #print("mpinsert res", void)
             txid = transaction[4][:56]
             return txid
         except Exception as e:
