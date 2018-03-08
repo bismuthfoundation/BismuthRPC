@@ -273,18 +273,25 @@ class Node:
     async def getrawtransaction(self, *args, **kwargs):
         """
         (txid) (format)  -  Returns raw transaction representation for given transaction id, in json
-        Bismuthd : kept format param for compatibility, but always returns a json output or Null if tx was not found
+        Bismuthd : kept format param for compatibility, but always returns a json output or Null if tx was not found.
+        if format is False, then a simple list with only tx row is returned.
+        if format is True, then a full featured json dict with extra info is given.
         """
         try:
             transaction = args[1]
             # check tx format?
+            format = False
+            if len(args)>2:
+                format = args[2]
+            """
             if not re.match('[a..zA..Z0..9\+/=]{56}', transaction):
+                # broken regexp
                 raise ValueError("Bad Transaction format")
-            return self.connection.command("api_gettransaction", [transaction])
+            """
+            return self.connection.command("api_gettransaction", [transaction, format])
         except Exception as e:
             #print(e)
             return {"version": self.config.version, "error": str(e)}
-
 
     async def sendfrom(self, *args, **kwargs):
         """

@@ -87,6 +87,10 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   
 * sendtoaddress  -  (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.   
   Sends from main account default address
+  
+* getrawtransaction  -  (txid) (format=False)  - Returns raw transaction representation for given transaction id.
+  if format is False, then a simple list with only tx row is returned.
+  if format is True, then a full featured json dict with extra info is given.  
 
 
 ## Implemented, need proper node api command to be coded
@@ -134,17 +138,16 @@ These commands are not known nor used by bitcoind
   https://bitcoin.org/en/developer-reference#getblock
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
 
-* gettransaction  -  (txid)  -  Returns an object about the given transaction containing: "amount"&nbsp;: total amount of the transaction, "confirmations"&nbsp;: number of confirmations of the transaction,"txid"&nbsp;: the transaction ID, "time"&nbsp;: time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"  
-  Needs additionnal command on node.py
+
+* getmempoolinfo  -  returns information about the node’s current transaction memory pool.  
+  https://bitcoin.org/en/developer-reference#getmempoolinfo
+
+
+* gettransaction  -  (txid)  -  Returns an object about the given transaction containing:   
+  "amount": total amount of the transaction, "confirmations": number of confirmations of the transaction,"txid": the transaction ID, 
+  "time": time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"    
+  This is almost like getrawtransaction but embeds info related to wallet and local accounts. Postponing.
   
-"rawtransaction" would be objects like line of mempool. Can contain a signature or not.  
-Maybe implement with variations (use json instead of hexstring).  
-
-* sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
-* decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
-* getrawtransaction  -  (txid) (verbose=0)  -  version 0.7 Returns raw transaction representation for given transaction id.
-
-
 See also new commands:
 
 * getblockchaininfo https://bitcoin.org/en/developer-reference#getblockchaininfo  
@@ -187,9 +190,6 @@ Tell me via an issue so I know tyou're working on it.
 * signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
 * verifymessage  -  (bismuthaddress) (signature) (message)  -  Verify a signed message. 
 
-* getmempoolinfo  -  returns information about the node’s current transaction memory pool.  
-  https://bitcoin.org/en/developer-reference#getmempoolinfo
-
 ## Undecided
 
 * addnode  -  (node) (add remove="" onetry="")  -  version 0.8 Attempts add or remove (node) from the addnode list or try a connection to (node) once. 
@@ -204,6 +204,12 @@ Tell me via an issue so I know tyou're working on it.
 * getwork  -  (data)  -  If (data) is not specified, returns formatted hash data to work on:, "midstate"&nbsp;: precomputed hash state after hashing the first half of the data,  "data"&nbsp;: block data,  "hash1"&nbsp;: formatted hash buffer for second hash,  "target"&nbsp;: little endian hash target, If (data) is specified, tries to solve the block and returns true if it was successful.
 * listlockunspent  -   * version 0.8 Returns list of temporarily unspendable outputs
 * lockunspent  -  (unlock?) (array-of-objects)  -  version 0.8 Updates list of temporarily unspendable outputs
+
+Not sure these are useful
+* sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
+* decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
+
+
 
 ## Won't implement
 
