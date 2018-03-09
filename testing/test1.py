@@ -77,8 +77,13 @@ client.request('validateaddress','142a7ce5362cfdac4f895e5f330a648a0d72f3c3a8ec36
 
 client.request('getbalancebyaddress','340c195f768be515488a6efedb958e135150b2ef3e53573a7017ac7d')
 
-client.request('getrawtransaction','CJJOKc7CIMAVTARDCpUTF17/Ff/gj2CisTYpyGi3I1P9l0j9RhxK3rsE', False)
-client.request('getrawtransaction','CJJOKc7CIMAVTARDCpUTF17/Ff/gj2CisTYpyGi3I1P9l0j9RhxK3rsE', True)
+#client.request('getrawtransaction','CJJOKc7CIMAVTARDCpUTF17/Ff/gj2CisTYpyGi3I1P9l0j9RhxK3rsE', False)
+#client.request('getrawtransaction','CJJOKc7CIMAVTARDCpUTF17/Ff/gj2CisTYpyGi3I1P9l0j9RhxK3rsE', True)
+
+client.request('getreceivedbyaddress','340c195f768be515488a6efedb958e135150b2ef3e53573a7017ac7d')
+
+client.request('listreceivedbyaddress')
+
 
 #client.request('listaccounts')
 """

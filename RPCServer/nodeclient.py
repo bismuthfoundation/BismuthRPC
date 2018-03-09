@@ -21,7 +21,7 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 # Interface versioning
 API_VERSION = '0.1b'
@@ -372,7 +372,7 @@ class Node:
     # @Asyncttlcache(ttl=10)
     async def getreceivedbyaccount(self, *args, **kwargs):
         """
-        Takes a single address, a min conf count, and sends back the total received amount (!= balance).
+        Takes an account, a min conf count, and sends back the total received amount for addresses of this account (!= balance).
         """
         try:
             minconf = 1
@@ -395,16 +395,16 @@ class Node:
         """
         try:
             minconf = 1
-            if len(args) > 2:
-                minconf = args[2]
+            if len(args) > 1:
+                minconf = args[1]
             if minconf < 1:
                 minconf = 1
             includeempty = False
-            if len(args) > 3:
-                includeempty = args[3]
-            address = args[1]
+            if len(args) > 2:
+                includeempty = args[2]
+            addresses = self.wallet.get_all_addresses()
             # mockup: [{"address":"moPhStktszZGwtVjziE7eoQ76ATQqfhMtK","account":"","amount":10.00000000,"confirmations":1,"label":"","txids":["82790ce7d1fd0df0bc2ffd3cdfdd452e36a32b90885984213a9424f083f74df4"]}]
-            all = self.connection.command("api_listreceived", [[address], minconf, includeempty])
+            all = self.connection.command("api_listreceived", [addresses, minconf, includeempty])
             return all
         except Exception as e:
             info = {"version": self.config.version, "error": str(e)}

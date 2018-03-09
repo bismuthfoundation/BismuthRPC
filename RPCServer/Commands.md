@@ -92,9 +92,6 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   if format is False, then a simple list with only tx row is returned.
   if format is True, then a full featured json dict with extra info is given.  
 
-
-## Implemented, need proper node api command to be coded
-
 * getreceivedbyaccount  -  (account) (minconf=1)  -  Returns the total amount received by addresses with (account) in transactions with at least (minconf) confirmations. 
   If (account) not provided return will include transactions to default account only. 
 
@@ -104,13 +101,14 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   bitcoin version: Works only for addresses in the local wallet, external addresses will always show 0.
   bismuthd version: Asks the node, so it works for any address     
 
+## Implemented, need further work to be more bitcoind compatible
+
 * listreceivedbyaccount  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing:   
   "account" : the account of the receiving addresses, "amount" : total amount received by addresses with this account, "confirmations": number of confirmations of the most recent transaction included
 
 * listreceivedbyaddress  -  (minconf=1) (includeempty=false)  -  Returns an array of objects containing:  
   "address" : receiving address, "account" : the account of the receiving address, "amount" : total amount received by the address, "confirmations": number of confirmations of the most recent transaction included.  
   To get a list of accounts on the system, execute listreceivedbyaddress 0 true
-  
   
 
 ## Implemented Specific Bismuthd commands
@@ -138,9 +136,21 @@ These commands are not known nor used by bitcoind
   https://bitcoin.org/en/developer-reference#getblock
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
 
+* signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
+* verifymessage  -  (bismuthaddress) (signature) (message)  -  Verify a signed message. 
 
 * getmempoolinfo  -  returns information about the node’s current transaction memory pool.  
   https://bitcoin.org/en/developer-reference#getmempoolinfo
+
+
+## Postponing
+
+See also new commands:
+
+* getblockchaininfo https://bitcoin.org/en/developer-reference#getblockchaininfo  
+  Will need some adjustments, see what is coherent in the data
+* getnetworkinfo https://bitcoin.org/en/developer-reference#getnetworkinfo
+* getwalletinfo https://bitcoin.org/en/developer-reference#getwalletinfo
 
 
 * gettransaction  -  (txid)  -  Returns an object about the given transaction containing:   
@@ -148,12 +158,6 @@ These commands are not known nor used by bitcoind
   "time": time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"    
   This is almost like getrawtransaction but embeds info related to wallet and local accounts. Postponing.
   
-See also new commands:
-
-* getblockchaininfo https://bitcoin.org/en/developer-reference#getblockchaininfo  
-  Will need some adjustments, see what is coherent in the data
-* getnetworkinfo https://bitcoin.org/en/developer-reference#getnetworkinfo
-* getwalletinfo https://bitcoin.org/en/developer-reference#getwalletinfo
 
 
 ## Help Appreciated
@@ -187,8 +191,6 @@ Tell me via an issue so I know tyou're working on it.
 * listtransactions  -  (account) (count=10) (from=0)  -  Returns up to (count) most recent transactions skipping the first (from) transactions for account (account). If (account) not provided it'll return recent transactions from all accounts.
 * listunspent  -  (minconf=1) (maxconf=999999)  -  version 0.7 Returns array of unspent transaction inputs in the wallet. 
  
-* signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
-* verifymessage  -  (bismuthaddress) (signature) (message)  -  Verify a signed message. 
 
 ## Undecided
 

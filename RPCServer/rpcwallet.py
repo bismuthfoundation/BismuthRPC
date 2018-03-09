@@ -20,7 +20,7 @@ import io
 
 from rpckeys import Key
 
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 
 class Wallet:
@@ -243,6 +243,13 @@ class Wallet:
                 pass
         self._save_rindex()
         return True
+
+    def get_all_addresses(self):
+        addresses = []
+        for account_name, _ in self._parse_accounts():
+            addresses.extend(self.get_addresses_by_account(account_name))
+        return addresses
+
 
     def get_account_address(self, anaccount=''):
         """
