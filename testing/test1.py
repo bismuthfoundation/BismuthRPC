@@ -84,6 +84,9 @@ client.request('getreceivedbyaddress','340c195f768be515488a6efedb958e135150b2ef3
 
 client.request('listreceivedbyaddress')
 
+# Not a bitcoind method
+#client.request('getblocksince', 0)
+
 
 #client.request('listaccounts')
 """

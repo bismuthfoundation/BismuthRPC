@@ -18,7 +18,7 @@ from nodeclient import Node
 from tornado_jsonrpc import JSONRPCHandler
 
 
-__version__ = "0.0.3"
+__version__ = "0.0.31"
 
 
 
@@ -27,7 +27,10 @@ if __name__ == "__main__":
     rpc_config = rpcconfig.Get()
     # add our current code version
     rpc_config.version = __version__
-    
+
+    # Temp testing
+    #rpc_config.poll = True
+
     try:
         node = Node(rpc_config)
     except Exception as e:
