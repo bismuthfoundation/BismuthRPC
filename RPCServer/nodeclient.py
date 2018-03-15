@@ -10,7 +10,9 @@ Also handles wallet and accounts
 
 # Generic modules
 #import socket, sys
-import re
+#import re
+import threading
+import time
 
 # Bismuth specific modules
 from rpcconnections import Connection
@@ -21,7 +23,7 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 # Interface versioning
 API_VERSION = '0.1b'
@@ -32,15 +34,64 @@ class Node:
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
     
-    __slots__ = ("config", "wallet", "s", "connection")
+    __slots__ = ("config", "wallet", "s", "connection", "stop_event", "last_height", "watchdog_thread")
     
     def __init__(self, config):
         self.config = config
         self.wallet = Wallet(verbose=config.verbose)
+        self.stop_event = threading.Event()
+        self.last_height = 0
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
         self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
- 
+        self.watchdog_thread = threading.Thread(target=self._watchdog)
+        self.watchdog_thread.daemon = True
+        self.watchdog_thread.start()
+
+    def _poll(self):
+        """
+        Will ask the node for the new blocks/tx since last known state and run through filters
+        :return:
+        """
+        print("Polling", self.last_height)
+        blocks = self.connection.command("api_getblocksince", [self.last_height])
+        self.last_height = blocks[:-1][0]
+        for tx in blocks:
+            print(tx)
+            """
+            [556649, 1521117120.4, '08acc82ebe8fce711191fd544331ce0ee24ce833a2ad36e3d15f8d94', '08acc82ebe8fce711191fd544331ce0ee24ce833a2ad36e3d15f8d94', 0, 
+            'kYVj7Jb50ZwZPhia76tU0VDLSNVg7ba76OqngwYf03Y/yG5RF2z6SS+Lpz3aKGxjN1DFlT3oiwx/3OUg3sGn6F6yTHH5330NGMI/x3ai/IVdcwXwhiq96yvZdIOPuuYIkwrfCCTQF/7kXOcM1Df1+T1dbZ4434NjCDKwHGq1CikNjur3kUsQg0ps6XM3VSTB1Ro1SUfWGY+jRV7Y1YzCs27jf261j95VJCPbFbL8OgA7JiwGPCMlnnbB9H1lCb2OXF1RKk0uyiGNophC5ADUORBIv0QoBiQmn35dNkKxtw1W5S08vB3j3XsZaY9+TSPIitoiYEyj2F+daHiaexx7vTVtDgfFLLsGO8gqIZ94lY+cnGthVBjvE+IiWw4ye6bIKW4l+IR59FIy4tXFwP+mX0rEvxrALLCqh4giNeIZpZzqMzk6QpatmHScl6U2cNzosYeamUNDLatiUojPtFQInlT3xz5Y3VUG/3WBiNmOKsIiiYkDbTfoQRCVVgitmXikEXmH6GiSUWM4+4R0swMq+5Kk5wOfcHJ96Mjv80N8Ul5E4HRw75JsaW38Gf7eIbVCr0pyD2r5KRrFcZIKWcApdArIUBs2S7t5B/exTuqI6ErFZqoa+qu8AZbarSHaL5qT0Oq7feWWYn9nQxDSPZgsomx7YUq6XoDQo6MvFZnuWM8=', 
+            'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQ0lqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FnOEFNSUlDQ2dLQ0FnRUFsVENvaXdiOVZQbXUrN2hwUDBRWQozVE5FQktaSFBxZ0FzUmcvRXNhUTZzTEVLVktjMFl6UnkzYU0yalQ1bDVNenpsd0h4TFZWT3JzdCs0WGlYM1NBClU1L3hKUUMrZVNsQlI3aFY3cFVYRnRMSWdZU29PaXhUN0Z4MzQ2R1NNeDcxWHhvS2UvRUFxOEsxTGNDcGNFKzkKc3laNmZhaVVzYVNBSkNvQWN6dU5PQ3NkaUdHSm1INFlld1RLVlhEQmxDZGJmUGpGOFB2VDF2UVZuSng5cWRQagpucW1lMlMyaTBXSWp3ZHZyR2U3NlY2dEFVWEFaQURIa3hoY2QwaWM5ZVpEcThOVmlkVGNBTURveDdpdWxESmhtCk5iMVZEenBLOFRYWFN0WmoxUE04ZWY5WTEvWWNHbDVtREx3OWgxeG9mLzRvYitnMC9mV1RpbVlyb053L2M5NGsKR3FhMmJibzkzbXY1U1pQRm1Qc0VPck56bnI4M2o2aGtVTG50VmhITmxwRy9wRHlVT1FZYVZERHYvT1MraDhGdwpDOUVCdW4yYWFBTGl1dUZudE1hL2pKVmw0RjJzT1N4MzNuUjY0cUkzamtwa0lCenVBTlI0MWZMYVBPZFl4NUV3CmdHOHRTODhvQ2tmV29BNnA5NVY2TStFT2s3NCtyRVdhTy9WaEpMNjU5ZTRGa2ZVcklqMHNIRnQyMHdySmJaR0QKUEdxOGZoVmwxd2FsamVZYnBtUEFsdHZoQjdOVzFnNDNJZ3F4VlN1NzBxejF2REhMQkdBVUgrMmZpbHBTZUp0NgpwR2RCYU1vQnZrR24vZ0RIWWh4UWxFNmxYK0ViSndrM3hEOFdBUUk5MktWRTJyaksrcmk1ZXFEKzlhU1hwdXF1CmV5enJiTm9xYmN5a21KY00wYzFZdTRNQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQ==', 
+            'c0039d82b44abb22bda72f07c69119a780ae30b6bdca731fac76f1cd', 0, 14.443351, 0, '62ce921d000000007c6ffbed00000000']
+            """
+
+
+
+    def _ping_if_needed(self):
+        """
+        Sends a ping if 29 sec or more passed since last activity, to keep connection open
+        :return:
+        """
+        if self.connection.last_activity < time.time()-29:
+            #print("Sending Ping")
+            ret = self.connection.command("api_ping")
+            #print(ret)
+
+    def _watchdog(self):
+        """
+        called in a thread to send ping and poll the node if needed.
+        :return:
+        """
+        # Give it some time to start and do things
+        time.sleep(10)
+        while not self.stop_event.is_set():
+            if self.config.poll:
+                self._poll()
+            self._ping_if_needed()
+            # 10 sec is a good compromise.
+            time.sleep(10)
+
+
     """
     All json-rpc calls are directly mapped to async methods here thereafter:
     As the mapping is auto, we can't conform to PEP and thus, no underscore in method names.
@@ -53,6 +104,8 @@ class Node:
         # TODO: Close possible open files and db connection
         #
         # TODO: Signal possible threads to terminate and wait.
+        self.stop_event.set()
+        #self.watchdog_thread.join() It's a daemon thread, no need to wait, it can take up to 10 sec because of the sleep()
         return True
         # NOT So simple. Have to signal tornado app to close (and not leave the port open) see 
         # https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server
@@ -524,6 +577,19 @@ class Node:
             info = {"version": self.config.version, "error": str(e)}
         return info
 
+    async def getblocksince(self, *args, **kwargs):
+        """
+        Returns the full blocks (including transactions) following a given block_height
+        Returns at most 10 blocks (the most recent ones)
+        """
+        try:
+            since = args[1]
+            info = self.connection.command("api_getblocksince", [since])
+            return info
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
+
     async def getaddressesbyaccount(self, *args, **kwargs):
         """
         List the addresses of the provided account args[1]
@@ -557,3 +623,7 @@ class Node:
             return self.wallet.reindex()
         except Exception as e:
             return {"version":self.config.version, "error":str(e)}
+
+
+if __name__ == "__main__":
+    print("I'm a module, can't run!")

@@ -1,7 +1,7 @@
 # Bitcoin client API Command List
 
 Here is the original list from https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list
-A more up to date reference is here : https://bitcoin.org/en/developer-reference
+A more up to date reference is here: https://bitcoin.org/en/developer-reference
 
 I'll edit along the way with what is supported or not (yet)
 
@@ -123,6 +123,10 @@ These commands are not known nor used by bitcoind
 * rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
   Update: No need to, we ask the node the get updated balances, no need to cache and risk some divergence.
 
+* getblocksince -  Returns the full blocks (with all transactions) following a given block_height  
+  Returns at most 10 blocks (the most recent ones)  
+  Used by the json-rpc server to poll and be notified of tx and new blocks.
+
 ## Working on
 
 * stop  -  Stop bismuthd server.
@@ -142,6 +146,7 @@ These commands are not known nor used by bitcoind
 * getmempoolinfo  -  returns information about the node’s current transaction memory pool.  
   https://bitcoin.org/en/developer-reference#getmempoolinfo
 
+* getblocksincewhere - some black magic
 
 ## Postponing
 
@@ -187,10 +192,12 @@ Tell me via an issue so I know tyou're working on it.
 
 * help  -  (command)  -  List commands, or get help for a command.
 
-* listsinceblock  -  (blockhash) (target-confirmations)  -  Get all transactions in blocks since block (blockhash), or all transactions if omitted. (target-confirmations) intentionally does not affect the list of returned transactions, but only affects the returned "lastblock" value.(1) 
+* listsinceblock  -  (blockhash) (target-confirmations)  -  Get all transactions affecting the wallet in blocks since block (blockhash), or all transactions if omitted. (target-confirmations) intentionally does not affect the list of returned transactions, but only affects the returned "lastblock" value.  
+  https://bitcoin.org/en/developer-reference#listsinceblock 
 * listtransactions  -  (account) (count=10) (from=0)  -  Returns up to (count) most recent transactions skipping the first (from) transactions for account (account). If (account) not provided it'll return recent transactions from all accounts.
 * listunspent  -  (minconf=1) (maxconf=999999)  -  version 0.7 Returns array of unspent transaction inputs in the wallet. 
  
+* clearbanned - The clearbanned RPC clears list of banned nodes.
 
 ## Undecided
 
