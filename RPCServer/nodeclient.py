@@ -34,13 +34,18 @@ class Node:
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
     
-    __slots__ = ("config", "wallet", "s", "connection", "stop_event", "last_height", "watchdog_thread")
+    __slots__ = ("config", "wallet", "s", "connection", "stop_event", "last_height", "watchdog_thread", "poll")
     
     def __init__(self, config):
         self.config = config
         self.wallet = Wallet(verbose=config.verbose)
         self.stop_event = threading.Event()
         self.last_height = 0
+        try:
+            # config may not know of poll, that's ok.
+            self.poll = self.config.poll
+        except:
+            self.poll = False
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
         self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
@@ -85,7 +90,7 @@ class Node:
         # Give it some time to start and do things
         time.sleep(10)
         while not self.stop_event.is_set():
-            if self.config.poll:
+            if self.poll:
                 self._poll()
             self._ping_if_needed()
             # 10 sec is a good compromise.
