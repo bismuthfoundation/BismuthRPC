@@ -123,8 +123,12 @@ These commands are not known nor used by bitcoind
 * rescan - Scan whole blockchain for all accounts, addresses and updates all balances.  
   Update: No need to, we ask the node the get updated balances, no need to cache and risk some divergence.
 
-* getblocksince -  Returns the full blocks (with all transactions) following a given block_height  
+* getblocksince -  (block) - Returns the full blocks (with all transactions) following a given block_height  
   Returns at most 10 blocks (the most recent ones)  
+  Used by the json-rpc server to poll and be notified of tx and new blocks.
+  
+* getaddresssince - (block) (minconf) (bismuth address) - Returns the transactions matching the given address, following a given block_height, with at least minconf confirmations.    
+  Returns at most info from 720 blocks (the older ones)  
   Used by the json-rpc server to poll and be notified of tx and new blocks.
 
 ## Working on
