@@ -21,9 +21,8 @@ from tornado_jsonrpc import JSONRPCHandler
 __version__ = "0.0.31"
 
 
-
 if __name__ == "__main__":
-    
+
     rpc_config = rpcconfig.Get()
     # add our current code version
     rpc_config.version = __version__
@@ -38,13 +37,13 @@ if __name__ == "__main__":
         # TODO: once started, disconnects and reconnects have to be taken care of seemlessly.
         print("Unable to connect to node :", e)
         sys.exit()
-        
+
     # see http://www.tornadoweb.org/en/stable/httpserver.html#http-server for ssl
     # see http://www.tornadoweb.org/en/stable/web.html#tornado.web.Application.settings for logging and such
     # see also http://www.tornadoweb.org/en/stable/guide/structure.html#the-application-object
     app = Application([(r"/", JSONRPCHandler, dict(interface=node))])
 
     app.listen(rpc_config.rpcport)
-    
+
     IOLoop.current().start()
-    
+
