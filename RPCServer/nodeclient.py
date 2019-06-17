@@ -23,19 +23,22 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 # Interface versioning
-API_VERSION = '0.1b'
+API_VERSION = '0.1c'
+"""
+0.1c : add getaddresssince(since, minconf, address)
+"""
 
 
 class Node:
     """
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
-    
+
     __slots__ = ("config", "wallet", "s", "connection", "stop_event", "last_height", "watchdog_thread", "poll")
-    
+
     def __init__(self, config):
         self.config = config
         self.wallet = Wallet(verbose=config.verbose)
@@ -70,8 +73,6 @@ class Node:
             'c0039d82b44abb22bda72f07c69119a780ae30b6bdca731fac76f1cd', 0, 14.443351, 0, '62ce921d000000007c6ffbed00000000']
             """
 
-
-
     def _ping_if_needed(self):
         """
         Sends a ping if 29 sec or more passed since last activity, to keep connection open
@@ -101,7 +102,7 @@ class Node:
     All json-rpc calls are directly mapped to async methods here thereafter:
     As the mapping is auto, we can't conform to PEP and thus, no underscore in method names.
     """
-    
+
     def stop(self, *args, **kwargs):
         """Clean stop the server"""
         print("Stopping Server")
@@ -112,7 +113,7 @@ class Node:
         self.stop_event.set()
         #self.watchdog_thread.join() It's a daemon thread, no need to wait, it can take up to 10 sec because of the sleep()
         return True
-        # NOT So simple. Have to signal tornado app to close (and not leave the port open) see 
+        # NOT So simple. Have to signal tornado app to close (and not leave the port open) see
         # https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server
         # https://gist.github.com/wonderbeyond/d38cd85243befe863cdde54b84505784
         #sys.exit()
@@ -125,7 +126,7 @@ class Node:
         """
         # WARNING: getinfo is deprecated and will be fully removed in 0.16. Projects should transition to using getblockchaininfo, getnetworkinfo, and getwalletinfo before upgrading to 0.16
         # However we get all info in one go, and it can be cached for subsequent partial info requests from other listed commands.
-        try:       
+        try:
             # TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
             # Moreover, it's not necessary to keep a connection open all the time. Not all commands need one, so it just need to connect on demand if it is not.
             info = self.connection.command("statusjson")
@@ -140,7 +141,7 @@ class Node:
         except Exception as e:
             info = {"version":self.config.version, "error":str(e)}
         return info
-    
+
     #@Asyncttlcache(ttl=10)
     async def getblockhash(self, *args, **kwargs):
         """
@@ -174,7 +175,7 @@ class Node:
         except Exception as e:
             mempool = {"version":self.config.version, "error":str(e)}
         return mempool
-        
+
     @Asyncttlcache(ttl=10)
     async def getdifficulty(self, *args, **kwargs):
         """
@@ -189,8 +190,8 @@ class Node:
 
     async def getblocknumber(self, *args, **kwargs):
         """
-        Deprecated. Removed in version 0.7. Use getblockcount. 
-        Returns the number of blocks in the longest block chain. 
+        Deprecated. Removed in version 0.7. Use getblockcount.
+        Returns the number of blocks in the longest block chain.
         """
         info = await self.getblockcount()
         return info
@@ -198,7 +199,7 @@ class Node:
     # No need to cache since it's using cached getinfo()
     async def getblockcount(self, *args, **kwargs):
         """
-        Returns the number of blocks in the longest block chain. 
+        Returns the number of blocks in the longest block chain.
         """
         info = await self.getinfo()
         try:
@@ -219,7 +220,7 @@ class Node:
             # address is a single string.
             return address
         except Exception as e:
-            error = {"version":self.config.version, "error":str(e)}                
+            error = {"version":self.config.version, "error":str(e)}
         return error
 
     async def getaccount(self, *args, **kwargs):
@@ -264,8 +265,8 @@ class Node:
 
     async def getnewaddress(self, *args, **kwargs):
         """(account)
-        Returns a new bitcoin address for receiving payments. 
-        If (account) is specified payments received with the address will be credited to (account). 
+        Returns a new bitcoin address for receiving payments.
+        If (account) is specified payments received with the address will be credited to (account).
         """
         try:
             account = args[1] # 0 is self
@@ -273,7 +274,7 @@ class Node:
             # address is a single string.
             return address
         except Exception as e:
-            error = {"version":self.config.version, "error":str(e)}                
+            error = {"version":self.config.version, "error":str(e)}
         return error
 
     async def backupwallet(self, *args, **kwargs):
@@ -284,8 +285,8 @@ class Node:
             file_name = args[1] # 0 is self
             return self.wallet.backup_wallet(file_name)
         except Exception as e:
-            error = {"version":self.config.version, "error":str(e)}                
-        return error                
+            error = {"version":self.config.version, "error":str(e)}
+        return error
 
     async def dumpwallet(self, *args, **kwargs):
         """(file_name)
@@ -295,7 +296,7 @@ class Node:
             file_name = args[1] # 0 is self
             return self.wallet.dump_wallet(file_name, self.config.version)
         except Exception as e:
-            error = {"version":self.config.version, "error":str(e)}                
+            error = {"version":self.config.version, "error":str(e)}
         return error
 
     async def createrawtransaction(self, *args, **kwargs):
@@ -595,6 +596,19 @@ class Node:
             info = {"version": self.config.version, "error": str(e)}
         return info
 
+    async def getaddresssince(self, *args, **kwargs):
+        """
+        Returns the transactions following a given block_height
+        Returns at most 720 blocks worth of data (the oldest ones)
+        """
+        try:
+            since, minconf, address = args[1], args[2], args[3]
+            info = self.connection.command("api_getaddresssince", [since, minconf, address])
+            return info
+        except Exception as e:
+            info = {"version": self.config.version, "error": str(e)}
+        return info
+
     async def getaddressesbyaccount(self, *args, **kwargs):
         """
         List the addresses of the provided account args[1]
@@ -618,7 +632,7 @@ class Node:
 
     """
     Here comes extra commands, that are *not* bitcoind compatible
-    """   
+    """
 
     async def reindexwallet(self, *args, **kwargs):
         """
