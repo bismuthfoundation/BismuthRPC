@@ -20,7 +20,11 @@ import io
 
 from rpckeys import Key
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
+
+RE_RSA_ADDRESS = re.compile(r"[abcdef0123456789]{56}")
+# TODO: improve that ECDSA one
+RE_ECDSA_ADDRESS = re.compile(r"^Bis")
 
 
 class Wallet:
@@ -250,7 +254,6 @@ class Wallet:
             addresses.extend(self.get_addresses_by_account(account_name))
         return addresses
 
-
     def get_account_address(self, anaccount=''):
         """
         returns the default address of the given account
@@ -293,6 +296,19 @@ class Wallet:
         except Exception as e:
             raise ValueError("Unknown address")
 
+    def address_is_valid(self, address: str) -> bool:
+        if RE_RSA_ADDRESS.match(address):
+            # RSA, 56 hex
+            return True
+        elif RE_ECDSA_ADDRESS.match(address):
+            if 50 < len(address) < 60:
+                # ED25519, around 54
+                return True
+            if 30 < len(address) < 50:
+                # ecdsa, around 37
+                return True
+        return False            
+            
     def validate_address(self, address):
         """
         Return information about the bismuth address.
@@ -301,11 +317,7 @@ class Wallet:
         :return: dict
         """
         # Format check
-        if re.match('[abcdef0123456789]{56}', address):
-            info = {'address': address, 'valid': True}
-        else:
-            info = {'address': address, 'valid': False}
-            return info
+        info = {'address': address, 'valid': self.address_is_valid(address)}
         # If this address in our wallet?
         if address in self.address_to_account:
             account_name = self.address_to_account[address]
