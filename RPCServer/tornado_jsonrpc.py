@@ -9,7 +9,7 @@ This file has been modified by @EggPool, the licence of the modified file is kep
 """
 
 import json
-#import sys, os
+# import sys, os
 from copy import deepcopy
 from sys import exc_info
 
@@ -19,6 +19,7 @@ MAX_ERROR_MESSAGE_LENGTH = 200
 
 # TODO: allow and process json-rpc 1.0
 PROTOCOL_VERSIONS = ('2.0',)
+
 
 # TODO: Handle proper auth
 
@@ -39,7 +40,7 @@ class JSONRPCHandler(RequestHandler):
     async def post(self, *args, **kwargs):
         try:
             request_body = json.loads(self.request.body.decode())
-            if self.interface.config.verbose >1:
+            if self.interface.config.verbose > 1:
                 print("request_body", request_body)
             if not request_body:
                 raise InvalidJSON
@@ -101,14 +102,14 @@ async def _get_response(request, interface, request_body):
     try:
         request_id = request_body.get('id')
         version = _get_version(request_body)
-        if interface.config.verbose :
-            print ("request_id",request_id,"version",version)
+        if interface.config.verbose:
+            print("request_id", request_id, "version", version)
         result = await _get_result(request, _get_method(interface, request_body), request_body.get('params'))
-        if interface.config.verbose :
-            print ("result",result)
+        if interface.config.verbose:
+            print("result", result)
     except Exception as exception:
-        if interface.config.verbose :
-            print ("Exception",exception)
+        if interface.config.verbose:
+            print("Exception", exception)
         return _get_with_protocol_version({'id': request_id, 'result': None, 'error': _get_error(exception)}, version)
 
     if request_id:

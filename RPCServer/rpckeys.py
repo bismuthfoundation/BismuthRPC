@@ -5,10 +5,10 @@ Will eventually be merged with node keys management to avoid duplicate code.
 @EggPool
 """
 
-#import base64, os, getpass, hashlib
-#from Crypto import Random
-#from simplecrypt import decrypt
-#import os
+# import base64, os, getpass, hashlib
+# from Crypto import Random
+# from simplecrypt import decrypt
+# import os
 import hashlib
 import base64
 from Cryptodome.PublicKey import RSA
@@ -41,7 +41,7 @@ class Key:
         """
         The core properties as a dict
         """
-        return {"address":self.address, "encrypted":self.encrypted, "privkey":self.privkey, "pubkey":self.pubkey}
+        return {"address": self.address, "encrypted": self.encrypted, "privkey": self.privkey, "pubkey": self.pubkey}
 
     @property
     def hashed_pubkey(self):
@@ -129,10 +129,10 @@ class Key:
         """
         if self.encrypted:
             raise AlreadyEncrypted
-        if IV=='' or passphrase=='':
+        if IV == '' or passphrase == '':
             IV = self.IV
             passphrase = self.passphrase
-        if IV=='' or passphrase=='':
+        if IV == '' or passphrase == '':
             raise NoCryptCredentials
         # fixed length key is needed, use hash
         key = hashlib.sha256(passphrase.encode("utf-8")).digest()
@@ -141,9 +141,9 @@ class Key:
         # TODO : strip header/footer
         # Has to be a multiple of 16
         extra = len(self.privkey) % 16
-        self.privkey += ' ' * (16-extra)
-        print("clear",self.privkey,"*",len(self.privkey))
-        self.privkey  = encryptor.encrypt(self.privkey)
+        self.privkey += ' ' * (16 - extra)
+        print("clear", self.privkey, "*", len(self.privkey))
+        self.privkey = encryptor.encrypt(self.privkey)
         self.encrypted = True
         return self.as_dict
 
@@ -154,17 +154,17 @@ class Key:
         # TODO: some code here to factorize.
         if not self.encrypted:
             raise AlreadyEncrypted
-        if IV=='' or passphrase=='':
+        if IV == '' or passphrase == '':
             IV = self.IV
             passphrase = self.passphrase
-        if IV=='' or passphrase=='':
+        if IV == '' or passphrase == '':
             raise NoCryptCredentials
         # fixed length key is needed, use hash
-        key = hashlib.sha256(passphrase.encode("utf-8")).digest() # TODO: we could store key once
+        key = hashlib.sha256(passphrase.encode("utf-8")).digest()  # TODO: we could store key once
         mode = AES.MODE_CBC
         decryptor = AES.new(key, mode, IV=IV)
         # TODO: reinject header/footer
-        self.privkey  = decryptor.decrypt(self.privkey).strip()
+        self.privkey = decryptor.decrypt(self.privkey).strip()
         self.encrypted = False
         return self.as_dict
 

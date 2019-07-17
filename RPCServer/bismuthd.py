@@ -17,9 +17,7 @@ import rpcconfig
 from nodeclient import Node
 from tornado_jsonrpc import JSONRPCHandler
 
-
 __version__ = "0.0.33"
-
 
 if __name__ == "__main__":
 
@@ -28,7 +26,7 @@ if __name__ == "__main__":
     rpc_config.version = __version__
 
     # Temp testing
-    #rpc_config.poll = True
+    # rpc_config.poll = True
 
     try:
         node = Node(rpc_config)
@@ -39,11 +37,10 @@ if __name__ == "__main__":
         sys.exit()
 
     # see http://www.tornadoweb.org/en/stable/httpserver.html#http-server for ssl
-    # see http://www.tornadoweb.org/en/stable/web.html#tornado.web.Application.settings for logging and such
+    #  see http://www.tornadoweb.org/en/stable/web.html#tornado.web.Application.settings for logging and such
     # see also http://www.tornadoweb.org/en/stable/guide/structure.html#the-application-object
     app = Application([(r"/", JSONRPCHandler, dict(interface=node))])
 
     app.listen(rpc_config.rpcport)
 
     IOLoop.current().start()
-
