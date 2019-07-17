@@ -1,3 +1,4 @@
 tornado>=6.0.3
 jsonrpcserver
 jsonrpcclient[requests]>2,<3
+pycryptodomex
