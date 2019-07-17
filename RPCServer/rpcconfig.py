@@ -3,8 +3,13 @@ Config file manager.
 """
 
 import os.path as path
+from logging import getLogger
+
 
 __version__ = '0.1.1'
+
+app_log = getLogger("tornado.application")
+
 
 
 class Get:
@@ -47,4 +52,4 @@ class Get:
         # TODO: raise error if missing critical info like bismuth node/path
         # Better : raise in the client class, where we need it.
         if self.verbose:
-            print(self.__dict__)
+            app_log.info(str(self.__dict__))

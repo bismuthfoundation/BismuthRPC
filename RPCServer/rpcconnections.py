@@ -11,6 +11,7 @@ import os
 import socket
 import time
 import threading
+from logging import getLogger
 
 # Logical timeout
 LTIMEOUT = 45
@@ -18,6 +19,8 @@ LTIMEOUT = 45
 SLEN = 10
 
 __version__ = '0.1.7'
+
+app_log = getLogger("tornado.application")
 
 
 class Connection(object):
@@ -41,7 +44,7 @@ class Connection(object):
         if not self.sdef:
             try:
                 if self.verbose:
-                    print("Connecting to", self.ipport)
+                    app_log.info("Connecting to {}".format(self.ipport))
                 self.sdef = socket.socket()
                 self.sdef.connect(self.ipport)
                 self.last_activity = time.time()
@@ -60,7 +63,7 @@ class Connection(object):
             self.last_activity = time.time()
             # res is always 0 on linux
             if self.verbose:
-                print("send ", data)
+                app_log.info("send {}".format(data))
             return True
         except Exception as e:
             # send failed, try to reconnect
@@ -68,11 +71,11 @@ class Connection(object):
             self.sdef = None
             if retry:
                 if self.verbose:
-                    print("Send failed ({}), trying to reconnect".format(e))
+                    app_log.warning("Send failed ({}), trying to reconnect".format(e))
                 self.check_connection()
             else:
                 if self.verbose:
-                    print("Send failed ({}), not retrying.".format(e))
+                    app_log.warning("Send failed ({}), not retrying.".format(e))
                 return False
             try:
                 self.sdef.settimeout(LTIMEOUT)
@@ -140,7 +143,7 @@ class Connection(object):
                 """
                 #  TODO : better handling of tries and delay between
                 if self.verbose:
-                    print("Error <{}> sending command, trying to reconnect.".format(e))
+                    app_log.warning("Error <{}> sending command, trying to reconnect.".format(e))
                 self.check_connection()
                 self._send(command)
                 if options:
