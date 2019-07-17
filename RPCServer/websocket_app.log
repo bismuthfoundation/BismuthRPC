@@ -1,7 +1,0 @@
-2019-07-17 12:40:56,727 INFO Starting rpc server on port 8115
-2019-07-17 12:50:19,300 INFO {'version': '0.0.3', 'encrypted': False}
-2019-07-17 12:50:19,301 INFO Starting rpc server on port 8115
-2019-07-17 12:50:22,787 INFO request_id 1 version 2.0
-2019-07-17 13:20:28,117 INFO {'version': '0.0.3', 'encrypted': False}
-2019-07-17 13:20:28,117 INFO Connecting to ('127.0.0.1', 5658)
-2019-07-17 13:20:28,118 INFO Starting rpc server on port 8115

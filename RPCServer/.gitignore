@@ -7,3 +7,5 @@ test1sd.py
 *.sav
 *.bak
 sd*.*
+*.log
+*.log.*
