@@ -11,22 +11,22 @@ Will eventually be merged with node keys management to avoid duplicate code.
 #import os
 import hashlib
 import base64
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import AES
-from Crypto.Signature import PKCS1_v1_5
-from Crypto.Hash import SHA
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Cipher import AES
+from Cryptodome.Signature import PKCS1_v1_5
+from Cryptodome.Hash import SHA
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 class Key:
     """
-    Represent a crypto key object and associated methods
+    Represent a RSA crypto key object and associated methods
     """
-    
+
     # TODO: Could add a "label" later on
     __slots__ = ('verbose', 'encrypted', 'privkey', 'pubkey', 'address', 'IV', 'passphrase')
-    
+
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.encrypted = False
@@ -140,7 +140,7 @@ class Key:
         encryptor = AES.new(key, mode, IV=IV)
         # TODO : strip header/footer
         # Has to be a multiple of 16
-        extra = len(self.privkey) % 16        
+        extra = len(self.privkey) % 16
         self.privkey += ' ' * (16-extra)
         print("clear",self.privkey,"*",len(self.privkey))
         self.privkey  = encryptor.encrypt(self.privkey)
@@ -190,7 +190,7 @@ class NoCryptCredentials(Exception):
     code = -32003
     message = 'Crypt credentials required'
     data = None
-    
+
 
 if __name__ == "__main__":
     print("I'm a module, can't run!")
