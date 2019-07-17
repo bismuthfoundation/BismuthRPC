@@ -28,7 +28,7 @@ You only need to define what changes, not everything.
 ```bash
 python3 bismuthd.py
 # With default configuration, testing can be done with something like:
-curl -d '{ "jsonrpc": "2.0", "method":"getinfo", "id":0}' http://username:password@localhost:8115/ | jq
+curl -d '{ "jsonrpc": "2.0", "method":"getinfo", "id":1}' http://username:password@localhost:8115/ | jq
 ```
 
 

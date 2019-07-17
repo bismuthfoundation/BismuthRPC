@@ -21,9 +21,10 @@ def cacheable_test(a):
     return (a, datetime.now())
 """
 
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta
 
 __version__ = '0.0.1'
+
 
 # TODO: BIG REWORK TODO HERE, caches func call, but not the params!
 
@@ -37,12 +38,14 @@ class Asyncttlcache(object):
         async def inner(*args, **kwargs):
             # Is some lock needed here to be thread safe?
             ttl = timedelta(seconds=kwargs.get('ttl', self.ttl))
-            if not ttl or func not in self.cached_function_responses or (datetime.now() - self.cached_function_responses[func]['fetch_time'] > ttl):
-                if 'ttl' in kwargs: 
+            if not ttl or func not in self.cached_function_responses or (
+                    datetime.now() - self.cached_function_responses[func]['fetch_time'] > ttl):
+                if 'ttl' in kwargs:
                     del kwargs['ttl']
                 res = await func(*args, **kwargs)
                 self.cached_function_responses[func] = {'data': res, 'fetch_time': datetime.now()}
             return self.cached_function_responses[func]['data']
+
         return inner
 
 

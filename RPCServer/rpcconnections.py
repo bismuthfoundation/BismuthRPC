@@ -17,17 +17,16 @@ LTIMEOUT = 45
 # Fixed header length
 SLEN = 10
 
-
 __version__ = '0.1.7'
 
 
 class Connection(object):
     """Connection to a Bismuth Node. Handles auto reconnect when needed"""
 
-    # TODO: add a maintenance thread that requests blockheight every 30 sec and updates balances when new blocks() are there.
+    #  TODO: add a maintenance thread that requests blockheight every 30 sec and updates balances when new blocks() are there.
 
     __slots__ = ('ipport', 'verbose', 'sdef', 'stats', 'last_activity', 'command_lock')
-    
+
     def __init__(self, ipport, verbose=False):
         """ipport is an (ip, port) tuple"""
         self.ipport = ipport
@@ -42,8 +41,8 @@ class Connection(object):
         if not self.sdef:
             try:
                 if self.verbose:
-                    print("Connecting to",self.ipport)
-                self.sdef =  socket.socket()
+                    print("Connecting to", self.ipport)
+                self.sdef = socket.socket()
                 self.sdef.connect(self.ipport)
                 self.last_activity = time.time()
             except Exception as e:
@@ -57,7 +56,7 @@ class Connection(object):
             self.sdef.settimeout(LTIMEOUT)
             # Make sure the packet is sent in one call
             sdata = str(json.dumps(data))
-            res = self.sdef.sendall(str(len(sdata)).encode("utf-8").zfill(slen)+sdata.encode("utf-8"))
+            res = self.sdef.sendall(str(len(sdata)).encode("utf-8").zfill(slen) + sdata.encode("utf-8"))
             self.last_activity = time.time()
             # res is always 0 on linux
             if self.verbose:
@@ -78,7 +77,8 @@ class Connection(object):
             try:
                 self.sdef.settimeout(LTIMEOUT)
                 # Make sure the packet is sent in one call
-                self.sdef.sendall(str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen)+str(json.dumps(data)).encode("utf-8"))
+                self.sdef.sendall(
+                    str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen) + str(json.dumps(data)).encode("utf-8"))
                 return True
             except Exception as e:
                 self.sdef = None
@@ -138,7 +138,7 @@ class Connection(object):
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                 print(exc_type, fname, exc_tb.tb_lineno)
                 """
-                # TODO : better handling of tries and delay between
+                #  TODO : better handling of tries and delay between
                 if self.verbose:
                     print("Error <{}> sending command, trying to reconnect.".format(e))
                 self.check_connection()
