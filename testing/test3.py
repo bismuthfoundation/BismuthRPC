@@ -34,6 +34,6 @@ client.request('getinfo')
 # New functions
 # client.request('getblocksince', 1200000)
 
-client.request('getaddresssince', 1200000, 1, "9ba0f8ca03439a8b4222b256a5f56f4f563f6d83755f525992fa5daf")
+client.request('getaddresssince', 1216000, 1, "9ba0f8ca03439a8b4222b256a5f56f4f563f6d83755f525992fa5daf")
 
 # client.request('importprivkey','-----BEGIN RSA PRIVATE KEY-----\nHERE_IS_THE_PRIVKEY\n-----END RSA PRIVATE KEY-----')
