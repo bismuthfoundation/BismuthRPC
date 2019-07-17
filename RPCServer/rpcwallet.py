@@ -9,14 +9,14 @@ Wallet class for Bismuth RJson-RPC Server
 Thanks to @rvanduiven
 """
 
-import sys
-import os
-import json
-import re
-import zipfile
-import time
 import datetime
 import io
+import json
+import os
+import re
+import time
+import zipfile
+from logging import getLogger
 
 from rpckeys import Key
 
@@ -25,6 +25,8 @@ __version__ = "0.0.6"
 RE_RSA_ADDRESS = re.compile(r"[abcdef0123456789]{56}")
 # TODO: improve that ECDSA one
 RE_ECDSA_ADDRESS = re.compile(r"^Bis")
+
+app_log = getLogger("tornado.application")
 
 
 class Wallet:
@@ -36,10 +38,10 @@ class Wallet:
     # TODO
 
     # TODO: When first iteration ok, process all docstrings
-    
+
     __slots__ = ('path', 'verbose', 'encrypted', 'locked', 'passphrase', 'IV','index', 'key', 'address_to_account')
     # TODO: those properties should be converted to _protected later on.
-    
+
     def __init__(self, path='.wallet', verbose=False):
         self.path = path
         self.verbose = verbose
@@ -51,13 +53,13 @@ class Wallet:
         self.IV = 16 * '\x00'
         if not os.path.exists(path):
             if self.verbose:
-                print(path,"does not exist, creating")
+                app_log.warning("Path {} does not exist, creating".format(path))
                 os.mkdir(path)
         # Since keys will be used everywhere, let's have our instance ready to run.
         self.key = Key(verbose=verbose)
         self.load()
         if self.verbose:
-            print(self.index)
+            app_log.info(self.index)
         #self.reindex()
 
     def load(self):
@@ -69,19 +71,19 @@ class Wallet:
         rindex_fname = self.path+'/rindex.json'
         if not os.path.exists(index_fname):
             if self.verbose:
-                print(index_fname,"does not exist, creating default")
+                app_log.warning("{} does not exist, creating default".format(index_fname))
                 # Default index file
                 self.index = {'version': __version__, 'encrypted':False}
-                with open(index_fname, 'w') as outfile:  
+                with open(index_fname, 'w') as outfile:
                     json.dump(self.index, outfile)
                 # Inverted index
                 self.address_to_account = {}
                 self._save_rindex()
         else:
-            with open(index_fname) as json_file:  
+            with open(index_fname) as json_file:
                 self.index = json.load(json_file)
             try:
-                with open(rindex_fname) as json_file:  
+                with open(rindex_fname) as json_file:
                     self.address_to_account = json.load(json_file)
             except:
                 self.address_to_account = {}
@@ -111,7 +113,7 @@ class Wallet:
                         yield (account, res)
                     except Exception as e:
                         if self.verbose:
-                            print("Possible error {} on file {}".format(e, afile))
+                            app_log.warning("Possible error {} on file {}".format(e, afile))
 
     def _save_rindex(self):
         """
@@ -119,13 +121,13 @@ class Wallet:
         """
         rindex_fname = self.path+'/rindex.json'
         # TODO: Lock
-        with open(rindex_fname, 'w') as outfile:  
+        with open(rindex_fname, 'w') as outfile:
             json.dump(self.address_to_account, outfile)
 
     def _check_account_name(self, account=''):
         """
         Raise an exception if account name does not comply
-        An account is 2-128 characters long, and may only contains the Base64 Character set. 
+        An account is 2-128 characters long, and may only contains the Base64 Character set.
         """
         if account == '':
             # empty if default account
@@ -150,7 +152,7 @@ class Wallet:
             fname = path+'/'+account+'.json'
         if not os.path.isfile(fname):
             if self.verbose:
-                print(fname,"does not exist, creating default")
+                app_log.info("{} does not exist, creating default".format(fname))
             # Default account file
             self.key.generate() # This takes some time.
             res = {'encrypted':False, 'addresses':[self.key.as_list]}
@@ -163,7 +165,7 @@ class Wallet:
             self.address_to_account[self.key.address] = account
             self._save_rindex()
         else:
-            with open(fname) as json_file:  
+            with open(fname) as json_file:
                 res = json.load(json_file)
         return res
 
@@ -182,7 +184,7 @@ class Wallet:
             fname = path+'/'+account+'.json'
         if not os.path.exists(path):
             os.mkdir(path)
-        with open(fname, 'w') as outfile:  
+        with open(fname, 'w') as outfile:
             json.dump(account_dict, outfile)
         return True
 
@@ -223,7 +225,7 @@ class Wallet:
         # Find the keys and init the crypto thingy
         the_key = Key()
         the_key.from_list(self._get_keys_for_address(address))
-        #print('signed part', signed_part)
+        # print('signed part', signed_part)
         signature_enc = the_key.sign(signed_part, base64_output=True)
         public_key_hashed = the_key.hashed_pubkey
         signed = list(transaction)
@@ -237,7 +239,7 @@ class Wallet:
         Regenerates the inverted index self.address_to_account (rindex.json)
         """
         if self.verbose:
-            print("Reindexing wallet - can take some time")
+            app_log.info("Reindexing wallet - can take some time")
         self.address_to_account = {}
         for account_name, account_details in self._parse_accounts():
             try:
@@ -286,7 +288,7 @@ class Wallet:
     def _get_keys_for_address(self, address):
         """Finds the account of the address, then it's keys"""
         try:
-            print(self.address_to_account[address])
+            # print(self.address_to_account[address])
             account = self._get_account(self.address_to_account[address])
             for keys in account['addresses']:
                 # keys is [address, encrypted, privkey, pubkey]
@@ -307,8 +309,8 @@ class Wallet:
             if 30 < len(address) < 50:
                 # ecdsa, around 37
                 return True
-        return False            
-            
+        return False
+
     def validate_address(self, address):
         """
         Return information about the bismuth address.
@@ -359,7 +361,7 @@ class Wallet:
         """
         account_dict = self._get_account(anaccount) # This will handle address creation if doesn't exists yet.
         self.key.generate() # This takes some time.
-        
+
         account_dict['addresses'].append(self.key.as_list)
         self._save_account(account_dict, account=anaccount)
         # update reverse index
@@ -384,7 +386,7 @@ class Wallet:
             raise InvalidPath
         # Open a zipfile for writing - afilename is the full path and filename of where to save.
         wallet_zip = zipfile.ZipFile(afilename, 'w', zipfile.ZIP_DEFLATED)
-        # Walk all files and dirs and add to zipfile - self.path is wallet directory 
+        # Walk all files and dirs and add to zipfile - self.path is wallet directory
         for root, dirs, files in os.walk(self.path):
             for file in files:
                 wallet_zip.write(os.path.join(root, file))
@@ -401,7 +403,7 @@ class Wallet:
             raise InvalidPath
         if not os.path.exists(afilename):
             if self.verbose:
-                print(afilename, "does not exist, creating")
+                app_log.info("{} does not exist, creating".format(afilename))
         with open(afilename, 'w') as outfile:
             # Write basic output
             outfile.write("# Wallet dump created by bismuthd {} \n".format(version))

@@ -11,6 +11,7 @@ This file has been modified by @EggPool, the licence of the modified file is kep
 import json
 # import sys, os
 from copy import deepcopy
+from logging import getLogger
 from sys import exc_info
 
 from tornado.web import RequestHandler
@@ -22,6 +23,8 @@ PROTOCOL_VERSIONS = ('2.0',)
 
 
 # TODO: Handle proper auth
+
+app_log = getLogger("tornado.application")
 
 
 class JSONRPCHandler(RequestHandler):
@@ -41,7 +44,7 @@ class JSONRPCHandler(RequestHandler):
         try:
             request_body = json.loads(self.request.body.decode())
             if self.interface.config.verbose > 1:
-                print("request_body", request_body)
+                app_log.info("request_body {}", self.request.body.decode())
             if not request_body:
                 raise InvalidJSON
 
@@ -103,13 +106,13 @@ async def _get_response(request, interface, request_body):
         request_id = request_body.get('id')
         version = _get_version(request_body)
         if interface.config.verbose:
-            print("request_id", request_id, "version", version)
+            app_log.info("request_id {} version {}".format(request_id, version))
         result = await _get_result(request, _get_method(interface, request_body), request_body.get('params'))
         if interface.config.verbose:
-            print("result", result)
+            app_log.info("result {}".format(json.dumps(result)))
     except Exception as exception:
         if interface.config.verbose:
-            print("Exception", exception)
+            app_log.warning("Exception {}".format(exception))
         return _get_with_protocol_version({'id': request_id, 'result': None, 'error': _get_error(exception)}, version)
 
     if request_id:
@@ -118,7 +121,7 @@ async def _get_response(request, interface, request_body):
 
 def _get_method(interface, request_body):
     if interface.config.verbose > 1:
-        print("Looking for method", request_body.get('method', ''))
+        app_log.info("Looking for method {}".format(request_body.get('method', '')))
     method = getattr(interface, request_body.get('method', ''), None)
     if not method:
         raise MethodNotFound

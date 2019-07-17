@@ -13,6 +13,7 @@ Also handles wallet and accounts
 # import re
 import threading
 import time
+from logging import getLogger
 
 # Bismuth specific modules
 from rpcconnections import Connection
@@ -30,6 +31,8 @@ API_VERSION = '0.1c'
 """
 0.1c : add getaddresssince(since, minconf, address)
 """
+
+app_log = getLogger("tornado.application")
 
 
 class Node:
@@ -61,11 +64,11 @@ class Node:
         Will ask the node for the new blocks/tx since last known state and run through filters
         :return:
         """
-        print("Polling", self.last_height)
+        app_log.info("Polling {}".format(self.last_height))
         blocks = self.connection.command("api_getblocksince", [self.last_height])
         self.last_height = blocks[:-1][0]
         for tx in blocks:
-            print(tx)
+            # print(tx)
             """
             [556649, 1521117120.4, '08acc82ebe8fce711191fd544331ce0ee24ce833a2ad36e3d15f8d94', '08acc82ebe8fce711191fd544331ce0ee24ce833a2ad36e3d15f8d94', 0, 
             'kYVj7Jb50ZwZPhia76tU0VDLSNVg7ba76OqngwYf03Y/yG5RF2z6SS+Lpz3aKGxjN1DFlT3oiwx/3OUg3sGn6F6yTHH5330NGMI/x3ai/IVdcwXwhiq96yvZdIOPuuYIkwrfCCTQF/7kXOcM1Df1+T1dbZ4434NjCDKwHGq1CikNjur3kUsQg0ps6XM3VSTB1Ro1SUfWGY+jRV7Y1YzCs27jf261j95VJCPbFbL8OgA7JiwGPCMlnnbB9H1lCb2OXF1RKk0uyiGNophC5ADUORBIv0QoBiQmn35dNkKxtw1W5S08vB3j3XsZaY9+TSPIitoiYEyj2F+daHiaexx7vTVtDgfFLLsGO8gqIZ94lY+cnGthVBjvE+IiWw4ye6bIKW4l+IR59FIy4tXFwP+mX0rEvxrALLCqh4giNeIZpZzqMzk6QpatmHScl6U2cNzosYeamUNDLatiUojPtFQInlT3xz5Y3VUG/3WBiNmOKsIiiYkDbTfoQRCVVgitmXikEXmH6GiSUWM4+4R0swMq+5Kk5wOfcHJ96Mjv80N8Ul5E4HRw75JsaW38Gf7eIbVCr0pyD2r5KRrFcZIKWcApdArIUBs2S7t5B/exTuqI6ErFZqoa+qu8AZbarSHaL5qT0Oq7feWWYn9nQxDSPZgsomx7YUq6XoDQo6MvFZnuWM8=', 
@@ -104,7 +107,7 @@ class Node:
 
     def stop(self, *args, **kwargs):
         """Clean stop the server"""
-        print("Stopping Server")
+        app_log.info("Stopping Server")
         self.connection.close(self.s)
         # TODO: Close possible open files and db connection
         #
@@ -503,10 +506,10 @@ class Node:
                 minconf = args[2]
             if minconf < 1:
                 minconf = 1
-            print('getb args', args)
+            # print('getb args', args)
             account = args[1]
             addresses = await self.getaddressesbyaccount(self, account)
-            print("getbalance", account, addresses, minconf)
+            app_log.info("getbalance {} {} {}".format(account, addresses, minconf))
             balance = self.connection.command("api_getbalance", [addresses, minconf])
             return balance
         except Exception as e:
@@ -544,7 +547,7 @@ class Node:
             balances = {}
             # TODO: better reuse the generator for rpcwallet and use dict comprehension, or pass getbalance as a callback
             for account in accounts:
-                print("Account", account)
+                app_log.info("Account {}".format(account))
                 # when called from here, self is not passed (but it is when called from the server, so we add it to keep args management coherent.
                 balances[account] = await self.getbalance(self, account, minconf)
             return balances

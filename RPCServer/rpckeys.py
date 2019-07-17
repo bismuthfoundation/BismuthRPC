@@ -142,7 +142,7 @@ class Key:
         # Has to be a multiple of 16
         extra = len(self.privkey) % 16
         self.privkey += ' ' * (16 - extra)
-        print("clear", self.privkey, "*", len(self.privkey))
+        # print("clear", self.privkey, "*", len(self.privkey))
         self.privkey = encryptor.encrypt(self.privkey)
         self.encrypted = True
         return self.as_dict
