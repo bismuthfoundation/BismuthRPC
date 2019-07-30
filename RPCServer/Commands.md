@@ -131,6 +131,44 @@ These commands are not known nor used by bitcoind
   Returns at most info from 720 blocks (the older ones)  
   Used by the json-rpc server to poll and be notified of tx and new blocks.
 
+## Implemented proxy for native commands
+
+* native - (native command) (args...) - 
+This command is a proxy command for [NativeAPI](https://github.com/EggPool/BismuthAPI/blob/master/Doc/commands_reference.md). 
+
+example of `blockgetjson` :
+```
+request:
+{
+	"jsonrpc": "2.0",
+	"id": 1,
+	"method":"native",
+	"params":["blockgetjson",1275724]
+}
+response
+{
+    "id": 17,
+    "result": [
+        {
+            "block_height": 1275724,
+            "timestamp": 1564400637.87,
+            "address": "3d2e8fa99657ab59242f95ca09e0698a670e65c3ded951643c239bc7",
+            "recipient": "3d2e8fa99657ab59242f95ca09e0698a670e65c3ded951643c239bc7",
+            "amount": 0,
+            "signature": "blr8I5sn9I5zF0WbSmtZJn0ObkUitv7I8D1QtYdYmZjyTnpsiGcbVLx+RoK4GJ32EXNNoR9LDqcT6Nnlc7Jf6oDvgyysZL3K81CXzPf7ttVMO9q2k1HLU/+9w3RZv0XYkyBRRO271vl1NsxCY8wan+N1zkn46Vql3AC3R3qeCvIZnfCgoNm+GjJ5VEDESqKhJuSVPN7j85P2Mym24rOfsvn3Nrpe+A0yVnYYf7SfOurd/MuLB4VFvH4Y/yVV73kI7DDBGko9fR1TqEYqzoVT7d9HbqVwQxjf0c+SLjaKHbz3i5DV/LD2GpX/0OIvzrqT5g2P1gluVJIPd46YkXk7t4lKLIl0T6+RL+HLFdLqWI29jK4mZ4o1IxnJYSLU2+M9En/t0Uj790z2oyhoxRBGxk7qjBwlvWn5paz651LdRe5/6Hx7Q2oSynjDS6z3OEYhfRN8P7KLcfsTMvwKSBSYspVLNEpjxP3d5qBwaTm5A+9Lo9LyDmKyNUSP8ZwehSDCk0RnitZOgMOnsE7N+euVX9bsYx+nlDdQYLU9Ygv+HdxoEImYufGqAJHanHo3DL+uKF/lthoG9KpgolLBU6lkc7O5YOYiddnGp71yM9E5hpGu00xqlxwoRT/UIz3tZIkX8CjJsQAcSq4UlR9RDeZN7ZRkB2FGADsiojVXJQQFnJ0=",
+            "public_key": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQ0lqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FnOEFNSUlDQ2dLQ0FnRUEwQXFkYkY0dGdtMTlpbUExSG5BUwpveFhqVkxpS2VlU0MrN0c2SG1kbmRaalVleEFJalN2b1NqTVYwNlRhK2pMeGJnTkVDbE11cUxieTdiOVB6ZlpCCjh5VFdwTkhjSVI5d3IvM1FWVk1LaEtZOWM0S3VhUHZYWlA2Q0NwYzlCdWJWY29LVkFueVNoeXp3VHFjV3dteXgKRG9DcGJIWktwcnh5QW5ueXlwbmxqZCswd3g5QXBidWFWdXQxYnBDMnFPanB4Z05uTkZCbENiTzFRaFczOE5yVgo4SDRaVUt5OGl2QWl0S1BvMWFtOXlnN0pwU2wwaGxYc2Z1eUJaNWhieDZnUHJRNGt5c3lNWEYybHJ5OTJXMTZmClpBWHY2VnlzRXJWdDdDblRmQWlYNUozdnVueXV6aDNaRFBUK3UwbmYxRVJJditwcmVZMDN3VVBQSXBCKzZ6NjIKdTkvVm8rK1VXKy9tUnl4ZmVTUWFhN1M0SDFHUllOdEZyQUpoK3JqbVNrNkpBREhMOXpWTUtpcDJRejVHZloxdwptaXIrZW0xbi90ZW9mRnhZWU5vSzJXVTFrV3FkTVViZlNJN1kwekhkRjJiWHBZemRYQk9Fa0MxZ0docklMOGdnCkFtTWlnbkVZekhaUmI5bmt5WFZlU3dJdGF1UTdPWkFZUmM0SkkzR3VqZnE2a2NTMDAxUnk5L0MwQ1VPVEZ0algKTSt4UUpPQks1MXROci9ZcExCRy9hYlN5Zi9Tc3Rsb3VZTGZOS0wyUXU4QzBHc2p1OTFuemxhbXFBTVRTWDhHRwpudXR2MDVxUFVNR3RsbGVlVzdhR1pkbFA4SXowYXM5Wkx4clJNWWhkeWM2eGV1TlpOT0xhN1VmRjhOK3pFSEVWCjZDU3lveWpTZkdNTjBMVk1MK29xL0trQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQ==",
+            "block_hash": "270da10a4e176315fcae75a31b0159c988882a841c9d80a50dac0080",
+            "fee": 0,
+            "reward": 10.048552,
+            "operation": "0",
+            "openfield": "0000000000000000000000000000000000000000000000000000<41>87;8?1>Z;:2O"
+        }
+    ],
+    "error": null,
+    "jsonrpc": "2.0"
+}
+```
+
 ## Working on
 
 * stop  -  Stop bismuthd server.
