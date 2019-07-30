@@ -161,6 +161,13 @@ class Node:
             block = {"version": self.config.version, "error": str(e)}
         return block
 
+    async def native(self, *args, **kwargs):
+        try:
+            result = self.connection.command(str(args[1]), list(args[2:]))
+        except Exception as e:
+            result = {"version": self.config.version, "error": str(e)}
+        return result
+
     @Asyncttlcache(ttl=10)
     async def getrawmempool(self, *args, **kwargs):
         """
