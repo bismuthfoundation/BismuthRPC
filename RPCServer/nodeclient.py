@@ -24,12 +24,13 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
 # Interface versioning
-API_VERSION = '0.1c'
+API_VERSION = '0.1d'
 """
 0.1c : add getaddresssince(since, minconf, address)
+0.1d : add native command proxy, gettransaction
 """
 
 app_log = getLogger("tornado.application")
@@ -348,15 +349,74 @@ class Node:
         try:
             transaction = args[1]
             # check tx format?
-            format = False
+            format_option = False
             if len(args) > 2:
-                format = args[2]
+                format_option = args[2]
             """
             if not re.match('[a..zA..Z0..9\+/=]{56}', transaction):
                 # broken regexp
                 raise ValueError("Bad Transaction format")
             """
-            return self.connection.command("api_gettransaction", [transaction, format])
+            return self.connection.command("api_gettransaction", [transaction, format_option])
+        except Exception as e:
+            # print(e)
+            return {"version": self.config.version, "error": str(e)}
+
+    async def gettransaction(self, *args, **kwargs):
+        """
+        (txid) (format)  -  Returns raw transaction representation for given transaction id, in json
+        Bismuthd : kept format param for compatibility, but always returns a json output or Null if tx was not found.
+        if format is False, then a simple list with only tx row is returned.
+        if format is True, then a full featured json dict with extra info is given.
+        """
+        try:
+            transaction = args[1]
+            res = self.connection.command("api_gettransaction", [transaction, True])
+            # print("res", res)
+            if "txid" in res:
+                blockhash = res['blockhash']
+                blocktime = int(res['blocktime'])
+                blockheight = res['blockheight']
+                status = await self.getinfo()  # Will use cached info if available
+                conf = status["blocks"] - blockheight
+                category1 = "generate" if res['reward'] > 0 else "send"
+                category2 = "receive"
+                # See https://bitcoin.org/en/developer-reference#gettransaction
+                out = {
+                    "amount": res['amount'],  # (numeric) The transaction amount in BIS
+                    "fee": res['fee'],   # (numeric) The amount of the fee in BIS
+                    "confirmations": conf,  # (numeric) The number of confirmations
+                    "blockhash": blockhash,  # (string) The block hash
+                    "blockheight": blockheight,  # extra for bis, block height
+                    "blockindex": -1,  # Irrelevant for Bis (numeric) The index of the transaction in the block that includes it
+                    "blocktime": blocktime,  # (numeric) The time in seconds since epoch (1 Jan 1970 GMT)
+                    "txid": res["txid"],  # (string) The transaction id.
+                    "time": int(res["time"]),  # (numeric) The transaction time in seconds since epoch (1 Jan 1970 GMT)
+                    "timereceived": blocktime,  # (numeric) The time received in seconds since epoch (1 Jan 1970 GMT) - we don't have it, block time instead.
+                    "bip125-replaceable": "no",  # (string) Whether this transaction could be replaced due to BIP125 (replace-by-fee);
+                    "details" : [
+                        {  # Sender part
+                            "address": res["address"] if res['reward'] == 0 else res['blockminer'],  # (string) The bis sender address, miner for coinbase
+                            "category": category1, # (string) The transaction category.
+                            "amount": res['amount'],  # (numeric) The amount in BTC
+                            "label": res['openfield'],  # (string) A comment for the address/transaction, if any
+                            "vout": -1,  # Irrelevant for Bis (numeric) the vout value
+                            "fee": res['fee'],  # (numeric) The amount of the fee in BIS. Warning: unlike BTC, This is positive and taken from the sender balance.
+                            "abandoned": False
+                        },
+                        {  # recipient part
+                            "address": res["recipient"],  # (string) The bis recipient address
+                            "category": category2,  # (string) The transaction category.
+                            "amount": res['amount'],  # (numeric) The amount in BTC
+                            "label": res['openfield'],  # (string) A comment for the address/transaction, if any
+                            "vout": -1,  # Irrelevant for Bis (numeric) the vout value
+                        }
+                    ],
+                    "hex": ""  # Not provided, see getrawtransaction (string) Raw data for transaction
+                }
+                return out
+            else:
+                return {"version": self.config.version, "error": str("Not found")}
         except Exception as e:
             # print(e)
             return {"version": self.config.version, "error": str(e)}
