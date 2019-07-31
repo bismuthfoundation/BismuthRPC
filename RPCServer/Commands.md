@@ -63,6 +63,59 @@ So, a numeric ID (in decimal or Hex form) is also ok.
 * getdifficulty  -   * Returns the proof-of-work difficulty as a multiple of the minimum difficulty. 
   Thanks @iyomisc
   
+* gettransaction  -  (txid)  -  Returns an object about the given transaction containing:   
+  "amount": total amount of the transaction, "confirmations": number of confirmations of the transaction,"txid": the transaction ID, 
+  "time": time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"    
+  This is almost like getrawtransaction but embeds extra info and splits the transaction into 2 pieces, like btc: details contains a "send" part and a "receive" one.  
+  With Bismuth, this split is artificial since Bismuth is account based.  
+  As a result, amount is the same in both transactions, and fee for "send" category is positive. "fee" + "amount" are deduced from sender balance.  
+  "vout" is not significant, neither is "abandoned" nor "bip125-replaceable".  
+  "timereceived" is an info we do not store, so block time is used instead.
+  
+example of `gettransaction` :
+```
+Request:
+{ "jsonrpc": "2.0", 
+  "method": "gettransaction", 
+  "params": ["hSU2QGPkILxPKajbTLYUI2AzjZqTRxl5PAdtK77CMompz6i30U13gInn"], 
+  "id": 2
+}
+
+Response:
+{
+    "amount": 180,
+    "fee": 0.01032,
+    "confirmations": 154,
+    "blockhash": "6db7f6ae22043caf7480175a8a0a8af30477e91b89b16b3e534d31de",
+    "blockheight": 1278118,
+    "blockindex": -1,
+    "blocktime": 1564555312,
+    "txid": "hSU2QGPkILxPKajbTLYUI2AzjZqTRxl5PAdtK77CMompz6i30U13gInn",
+    "time": 1564555206,
+    "timereceived": 1564555312,
+    "bip125-replaceable": "no",
+    "details": [
+        {
+            "address": "685e263b24a38c03478b40dbcdcb125f20a05f1e3c558d93287c85a6",
+            "category": "send",
+            "amount": 180,
+            "label": "532d112700ed4d1b9a07dbe5763d5f7f",
+            "vout": -1,
+            "fee": 0.01032,
+            "abandoned": false
+        },
+        {
+            "address": "f6c0363ca1c5aa28cc584252e65a63998493ff0a5ec1bb16beda9bac",
+            "category": "receive",
+            "amount": 180,
+            "label": "532d112700ed4d1b9a07dbe5763d5f7f",
+            "vout": -1
+        }
+    ],
+    "hex": ""
+}
+```
+  
 ## Implemented, need api handler in node but this node side code is already coded and successfully tested
 
 * validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
@@ -198,13 +251,6 @@ See also new commands:
   Will need some adjustments, see what is coherent in the data
 * getnetworkinfo https://bitcoin.org/en/developer-reference#getnetworkinfo
 * getwalletinfo https://bitcoin.org/en/developer-reference#getwalletinfo
-
-
-* gettransaction  -  (txid)  -  Returns an object about the given transaction containing:   
-  "amount": total amount of the transaction, "confirmations": number of confirmations of the transaction,"txid": the transaction ID, 
-  "time": time associated with the transaction(1)., "details" - An array of objects containing:, "account","address", "category", "amount", "fee"    
-  This is almost like getrawtransaction but embeds info related to wallet and local accounts. Postponing.
-  
 
 
 ## Help Appreciated
