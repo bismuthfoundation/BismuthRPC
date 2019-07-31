@@ -16,8 +16,6 @@ jsonrpcclient.config.validate = False
 # The test bismuthd.py server
 client = HTTPClient('http://username:password@127.0.0.1:8115/')
 
-
-
 ## AUTH ##
 
 # Simple Auth - see http://docs.python-requests.org/en/master/user/authentication/
@@ -31,11 +29,11 @@ client.session.headers.update({'Connection': 'close'})
 
 client.request('getinfo')
 
-# New functions
-# client.request('getblocksince', 1200000)
+# verbosity 1 (default)
+client.request('getblock', "b809da2230790e6c7dd3aeb00f7117c0e33c94b0426d774900e61f70")
 
-# client.request('getaddresssince', 1216000, 1, "9ba0f8ca03439a8b4222b256a5f56f4f563f6d83755f525992fa5daf")
+# verbosity 0 (same as 1 with Bismuth)
+# client.request('getblock', "b809da2230790e6c7dd3aeb00f7117c0e33c94b0426d774900e61f70", 0)
 
-# client.request('importprivkey','-----BEGIN RSA PRIVATE KEY-----\nHERE_IS_THE_PRIVKEY\n-----END RSA PRIVATE KEY-----')
-
-client.request('gettransaction', "hSU2QGPkILxPKajbTLYUI2AzjZqTRxl5PAdtK77CMompz6i30U13gInn")
+# verbosity 2
+# client.request('getblock', "b809da2230790e6c7dd3aeb00f7117c0e33c94b0426d774900e61f70", 2)

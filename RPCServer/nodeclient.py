@@ -9,10 +9,12 @@ Also handles wallet and accounts
 """
 
 # Generic modules
-# import socket, sys
+import os
+import sys
 # import re
 import threading
 import time
+from distutils.version import LooseVersion
 from logging import getLogger
 
 # Bismuth specific modules
@@ -24,13 +26,14 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 
 # Interface versioning
-API_VERSION = '0.1d'
+API_VERSION = '0.1e'
 """
 0.1c : add getaddresssince(since, minconf, address)
 0.1d : add native command proxy, gettransaction
+0.1e : add getblock(hash)
 """
 
 app_log = getLogger("tornado.application")
@@ -419,6 +422,111 @@ class Node:
                 return {"version": self.config.version, "error": str("Not found")}
         except Exception as e:
             # print(e)
+            return {"version": self.config.version, "error": str(e)}
+
+
+    def raw_format(self, tx: dict, mining_tx: dict, block_hash: str, block_height: int, current_height: int) -> dict:
+        """Helper to format a native tx from getblock to rawtransaction format. (see bismuth api_handler for reference)"""
+        transaction = dict()
+        transaction['txid'] = tx['signature'][:56]
+        transaction['time'] = int(float(tx["timestamp"]))
+        transaction['hash'] = tx['signature']
+        transaction['address'] = tx['address']
+        transaction['recipient'] = tx['recipient']
+        transaction['amount'] = tx['amount']
+        transaction['fee'] = tx['fee']
+        transaction['reward'] = tx['reward']
+        transaction['operation'] = tx['operation']
+        transaction['openfield'] = tx['openfield']
+        transaction['pubkey'] = tx['pubkey']
+        transaction['blockhash'] = block_hash
+        transaction['blockheight'] = block_height
+        transaction['confirmations'] = current_height - block_height
+        transaction['blocktime'] = int(float(mining_tx["timestamp"]))
+        transaction['blockminer'] = mining_tx["address"]
+        return transaction
+
+    async def getblock(self, *args, **kwargs):
+        """
+        (hash) (verbosity)  -  gets a block with a particular hash from the local block database as a JSON object.
+        For Bismuth, verbosity 0 returns the same as verbosity 1.
+        """
+        try:
+            block_hash = args[1]
+            verbosity = args[2] if len(args) > 2 else 1
+            if verbosity < 1:
+                verbosity = 1
+            print("verbosity", verbosity)
+            status = await self.getinfo()  # Will use cached info if available
+            if LooseVersion(status["walletversion"]) >= LooseVersion("4.3.0.7"):
+                # We have a recent node, can ask api_getblockfromhashextra
+                # Using a new call rather than previous one with a param for compatibility reason
+                # print("New ver")
+                res = self.connection.command("api_getblockfromhashextra", [block_hash])
+                # print(res)
+                # This one just sends back block dict, not dict of a dict
+                previous_block_hash = res["previous_block_hash"]
+                next_block_hash = res["next_block_hash"]
+                difficulty = res["difficulty"]
+
+            else:
+                print("Old ver")
+                res = self.connection.command("api_getblockfromhash", [block_hash])
+                if len(res) == 1:
+                    # Future proof: if we got a larger dict, it's a block and not a dict of height:block
+                    res = list(res.values())[0]
+                # These 3 props need 4.3.0.7 + node
+                previous_block_hash = ""
+                next_block_hash = ""
+                difficulty = -1
+
+            if "block_height" not in res:
+                # no block
+                out = {
+                    "hash": block_hash,  # (string) the block hash (same as provided)
+                    "confirmations": -1
+                }
+                return out
+            size = len(str(res.values()))
+            block_height = res['block_height']
+            conf = status["blocks"] - block_height
+            if verbosity == 2:
+                # replace tx by list of txs instead of list of txids
+                mining_tx = res['transactions'][-1]
+                txid_list = [self.raw_format(transaction, mining_tx, block_hash=block_hash, block_height=block_height, current_height=status["blocks"]) for transaction in res['transactions']]
+            else:
+                txid_list = [transaction['signature'][:56] for transaction in res['transactions']]
+            block_time = int(res['transactions'][-1]["timestamp"])
+            nonce = res['transactions'][-1]["openfield"]
+
+            # print("res", res)
+            out = {
+                "hash": block_hash,  # (string) the block hash (same as provided)
+                "confirmations": conf,  # (numeric) The number of confirmations, or -1 if the block is not on the main chain
+                "size": size,  # (numeric) The block size
+                "strippedsize": size,  # (numeric) The block size excluding witness data - same for Bis
+                # "weight": n  # (numeric) The block weight as defined in BIP 141 - No sense for Bis
+                "height": block_height,  # (numeric) The block height or index
+                "version" : 1,  # (numeric) The block version - fixed 1 for Bismuth
+                "versionHex": "00000001",  # (string) The block version formatted in hexadecimal -
+                # "merkleroot": block_hash,  # (string) The merkle root - no sense for Bis, blockhash instead.
+                "tx" : txid_list,
+                "time" : block_time,  # (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)
+                # "mediantime" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)
+                "nonce" : nonce,  # (str) The nonce **NOT** a numeric like with BTC.
+                # "bits": "1d00ffff",  # (string) The bits
+                "difficulty" : difficulty,  # (numeric) The difficulty. -1 for older nodes
+                "chainwork" : "00",   # (string) Expected number of hashes required to produce the chain up to this block (in hex) - 00 for current bis rpc implementation
+                "nTx" : len(txid_list),  # (numeric) The number of transactions in the block.
+                "previousblockhash" : previous_block_hash,  # (string) The hash of the previous block - "" for older nodes
+                "nextblockhash" : next_block_hash,  # (string) The hash of the next block - "" for older nodes
+            }
+            return out
+        except Exception as e:
+            # print(e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             return {"version": self.config.version, "error": str(e)}
 
     async def sendfrom(self, *args, **kwargs):

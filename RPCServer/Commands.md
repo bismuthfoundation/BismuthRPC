@@ -72,7 +72,7 @@ So, a numeric ID (in decimal or Hex form) is also ok.
   "vout" is not significant, neither is "abandoned" nor "bip125-replaceable".  
   "timereceived" is an info we do not store, so block time is used instead.
   
-example of `gettransaction` :
+example of `gettransaction`:  
 ```
 Request:
 { "jsonrpc": "2.0", 
@@ -114,6 +114,41 @@ Response:
     ],
     "hex": ""
 }
+```
+
+* getblock  -  (hash) (verbosity=1)  -  Returns information about the block with the given hash.  
+  https://bitcoin.org/en/developer-reference#getblock
+  
+example of `getblock` (default verbosity=1):    
+```
+Request:
+{ "jsonrpc": "2.0", 
+  "method": "getblock", 
+  "params": ["b809da2230790e6c7dd3aeb00f7117c0e33c94b0426d774900e61f70"], 
+  "id": 2
+}
+
+Response:
+{
+    "hash": "b809da2230790e6c7dd3aeb00f7117c0e33c94b0426d774900e61f70",
+    "confirmations": 540,
+    "size": 4013,
+    "strippedsize": 4013,
+    "height": 1278276,
+    "version": 1,
+    "versionHex": "00000001",
+    "tx": [
+        "M6iaN/g8+WUth2C0ZNoXOocYX7jP6j6n/IH9JG4PerNVI21DDQrOTipd",
+        "m6xOkdmUMeuOjYZ3NZdtIPfJ2R6wuBJAW9CnXCkDGtr0nlEonxtzWQ5J"
+    ],
+    "time": 1564563695,
+    "nonce": "00000000000000000000000000000000000000000000000000001=64;?;38;0l105Z",
+    "difficulty": 105,
+    "chainwork": "00",
+    "nTx": 2,
+    "previousblockhash": "53c765b9c50a2d1da9711eb526f9b0c33cc5a4a5f845a2df3387f914",
+    "nextblockhash": "ef8d35e00295f877039354d4cbcaa395616dc89763afa15d4374d838"
+}  
 ```
   
 ## Implemented, need api handler in node but this node side code is already coded and successfully tested
@@ -189,7 +224,7 @@ These commands are not known nor used by bitcoind
 * native - (native command) (args...) - 
 This command is a proxy command for [NativeAPI](https://github.com/EggPool/BismuthAPI/blob/master/Doc/commands_reference.md). 
 
-example of `blockgetjson` :
+example of `blockgetjson`:  
 ```
 request:
 {
@@ -231,8 +266,7 @@ response
 
 @iyomisc?
 * getbestblockhash  -   * version 0.9 Returns the hash of the best (tip) block in the longest block chain. 
-* getblock  -  (hash)  -  Returns information about the block with the given hash.  
-  https://bitcoin.org/en/developer-reference#getblock
+
 * getconnectioncount  -   * Returns the number of connections to other nodes. 
 
 * signmessage  -  (bismuthaddress) (message)  -  Sign a message with the private key of an address. 
