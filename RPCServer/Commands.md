@@ -5,8 +5,12 @@ A more up to date reference is here: https://bitcoin.org/en/developer-reference
 
 I'll edit along the way with what is supported or not (yet)
 
-This list and comments are WIP and are valid for version 0.1b of this Bismuthd API only
+This list and comments are WIP and are valid for version 0.1e of this Bismuthd API only
 
+## API Versions
+- 0.1c : add getaddresssince(since, minconf, address)  
+- 0.1d : add native command proxy and gettransaction  
+- 0.1e : add getblock(hash)
 
 ## Accounts
 
@@ -259,6 +263,11 @@ response
 
 ## Working on
 
+* getwalletinfo - Requested for exchange need  
+  https://bitcoin.org/en/developer-reference#getwalletinfo
+
+* Wallet encryption - Requested for exchange need
+
 * stop  -  Stop bismuthd server.
 
 * getrawmempool  -   * Returns all transaction ids in memory pool 
@@ -284,16 +293,15 @@ See also new commands:
 * getblockchaininfo https://bitcoin.org/en/developer-reference#getblockchaininfo  
   Will need some adjustments, see what is coherent in the data
 * getnetworkinfo https://bitcoin.org/en/developer-reference#getnetworkinfo
-* getwalletinfo https://bitcoin.org/en/developer-reference#getwalletinfo
 
 
 ## Help Appreciated
 
-The following commands are self contained and should be OK to implement in a safe a independant way.
+The following commands are self contained and should be OK to implement in a safe a independent way.  
 I can do it, but it's always nice not to be alone :)
 
-The 4 following commands are to be coded in one go by the same person.
-See rpckeys.py and try_keys.py for the encryption/decryption logic.
+The 4 following commands are to be coded in one go by the same person.  
+See rpckeys.py and try_keys.py for the encryption/decryption logic.  
 See also https://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-python-with-pycrypto for background info
 
 * encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
@@ -306,7 +314,7 @@ See also https://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-pyt
   This call returns the random IV used.
 * walletlock  -   * Removes the wallet encryption key from memory, locking the wallet. After calling this method, you will need to call walletpassphrase again before being able to call any methods which require the wallet to be unlocked. 
 
-The more the project move forward, the difficult it is to give small tasks for beginners.  
+The more the project move forward, the more difficult it is to give small tasks for beginners.  
 So I won't add more here, but you can look at the code, and if you understand and feel comfortable with it, then pick a function from "To be implemented" and give it a try.  
 Tell me via an issue so I know tyou're working on it.
 
@@ -321,9 +329,12 @@ Tell me via an issue so I know tyou're working on it.
  
 * clearbanned - The clearbanned RPC clears list of banned nodes.
 
+* addnode  -  (node) (add remove="" onetry="")  -  version 0.8 Attempts add or remove (node) from the addnode list or try a connection to (node) once.  
+  Can now be added, bismuth native API now supports addpeer 
+
+
 ## Undecided
 
-* addnode  -  (node) (add remove="" onetry="")  -  version 0.8 Attempts add or remove (node) from the addnode list or try a connection to (node) once. 
 * getaddednodeinfo  -  (dns) (node)  -  version 0.8 Returns information about the given added node, or all added nodes
 
 * createmultisig  -  (nrequired) &lt;'("key,"key")'&gt;  -  Creates a multi-signature address and returns a json object  | 
@@ -336,7 +347,7 @@ Tell me via an issue so I know tyou're working on it.
 * listlockunspent  -   * version 0.8 Returns list of temporarily unspendable outputs
 * lockunspent  -  (unlock?) (array-of-objects)  -  version 0.8 Updates list of temporarily unspendable outputs
 
-Not sure these are useful
+Not sure these are useful (can use new native proxy instead)
 * sendrawtransaction  -  (hexstring)  -  version 0.7 Submits raw transaction (serialized, hex-encoded) to local node and network. 
 * decoderawtransaction  -  (hex string="")  -  version 0.7 Produces a human-readable JSON object for a raw transaction.
 
