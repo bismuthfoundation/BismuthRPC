@@ -22,7 +22,7 @@ import rpcconfig
 from nodeclient import Node
 from tornado_jsonrpc import JSONRPCHandler
 
-__version__ = "0.0.35"
+__version__ = "0.0.36"
 
 
 if __name__ == "__main__":
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     logfile = path.abspath("websocket_app.log")
     # Rotate log after reaching 512K, keep 5 old copies.
     rotateHandler = RotatingFileHandler(logfile, "a", 512 * 1024, 10)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
     rotateHandler.setFormatter(formatter)
     app_log.addHandler(rotateHandler)
 
@@ -52,11 +52,9 @@ if __name__ == "__main__":
     enable_pretty_logging()
     logfile2 = path.abspath("websocket_access.log")
     rotateHandler2 = RotatingFileHandler(logfile2, "a", 512 * 1024, 10)
-    formatter2 = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    formatter2 = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
     rotateHandler2.setFormatter(formatter2)
     access_log.addHandler(rotateHandler2)
-
-
 
     try:
         node = Node(rpc_config)
