@@ -17,9 +17,11 @@ import re
 import time
 import zipfile
 from logging import getLogger
+from time import time
+
+from polysign.signerfactory import SignerFactory
 
 from rpckeys import Key
-from polysign.signerfactory import SignerFactory
 
 __version__ = "0.0.6"
 
@@ -44,7 +46,7 @@ class Wallet:
         "encrypted",
         "locked",
         "passphrase",
-        "IV",
+        "unlock_timeout",
         "index",
         "key",
         "address_to_account",
@@ -57,9 +59,9 @@ class Wallet:
         self.encrypted = False
         self.locked = False
         self.passphrase = ""
+        self.unlock_timeout = 0
         self.index = None
         self.address_to_account = {}
-        self.IV = 16 * "\x00"
         if not os.path.exists(path):
             if self.verbose:
                 app_log.warning("Path {} does not exist, creating".format(path))
@@ -90,6 +92,11 @@ class Wallet:
                 # Inverted index
                 self.address_to_account = {}
                 self._save_rindex()
+        # If no default address, create one
+        addresses = self.get_account_address()
+        if len(addresses) < 1:
+            app_log.warning("No default address, creating one")
+            self.get_new_address()
         else:
             with open(index_fname) as json_file:
                 self.index = json.load(json_file)
@@ -167,7 +174,7 @@ class Wallet:
             fname = path + "/" + account + ".json"
         if not os.path.isfile(fname):
             if self.verbose:
-                app_log.info("{} does not exist, creating default".format(fname))
+                app_log.info("{} does not exist, creating default address".format(fname))
             # Default account file
             self.key.generate()  # This takes some time.
             res = {"encrypted": False, "addresses": [self.key.as_list]}
@@ -328,21 +335,6 @@ class Wallet:
         except Exception as e:
             raise ValueError("Unknown address")
 
-    """
-    def address_is_valid(self, address: str) -> bool:
-        if RE_RSA_ADDRESS.match(address):
-            # RSA, 56 hex
-            return True
-        elif RE_ECDSA_ADDRESS.match(address):
-            if 50 < len(address) < 60:
-                # ED25519, around 54
-                return True
-            if 30 < len(address) < 50:
-                # ecdsa, around 37
-                return True
-        return False
-    """
-
     def validate_address(self, address):
         """
         Return information about the bismuth address.
@@ -389,11 +381,19 @@ class Wallet:
 
     def get_new_address(self, an_account=""):
         """
-        returns a new address for the given account
+        returns a new address for the given account.
+        Wallet must be un-encrypted, or passphrase be in memory.
         """
         account_dict = self._get_account(
             an_account
         )  # This will handle address creation if doesn't exists yet.
+        if self.encrypted:
+            # TODO: function wallet_unlocked for wallet info as well
+            if self.passphrase == "":
+                return "Wallet has to be unlocked first"
+            else:
+                if self.unlock_timeout < time():
+                    return "Wallet has to be unlocked first"
         self.key.generate()  # This takes some time.
 
         account_dict["addresses"].append(self.key.as_list)
