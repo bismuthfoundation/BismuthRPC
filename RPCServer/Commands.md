@@ -163,7 +163,7 @@ Response:
 * getbalance  -  (account) (minconf=1)  -  If (account) is not specified, returns the server's total available balance. If (account) is specified, returns the balance in the account.  
   bismuthd specifics: if account is not specified, returns the balance of the default '' account.  
   Does NOT includes transactions or fees from mempool. Minimum minconf value is 1.  
-  An account can have several addresses: send a list to the node, not just a single address.
+  An account can have several addresses: sends a list to the node, not just a single address.
 
 * getpeerinfo  -  Returns data about each connected node.  
   See https://bitcoin.org/en/developer-reference#getpeerinfo  

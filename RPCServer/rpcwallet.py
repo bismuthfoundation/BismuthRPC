@@ -73,6 +73,15 @@ class Wallet:
             app_log.info(self.index)
         # self.reindex()
 
+    def unlocked_until(self) -> int:
+        """Tells if the wallet is unlocked, and until when.
+        If locked, returns 0. If un-encrypted, returns +24h"""
+        if not self.encrypted:
+            return int(time()) + 86400
+        if self.unlock_timeout <= time() or self.passphrase == "":
+            self.unlock_timeout = 0
+        return self.unlock_timeout
+
     def load(self):
         """
         Loads the current wallet state or init if the dir is empty.

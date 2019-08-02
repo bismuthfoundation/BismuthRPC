@@ -12,27 +12,28 @@ Also handles wallet and accounts
 import os
 import sys
 import threading
-import time
+from time import time, sleep
 from distutils.version import LooseVersion
 from logging import getLogger
 
 # Bismuth specific modules
 from rpcconnections import Connection
-from rpcwallet import Wallet
+from rpcwallet import Wallet, __version__ as wallet_version
 from ttlcache import Asyncttlcache
 
 """
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 
 # Interface versioning
-API_VERSION = "0.1e"
+API_VERSION = "0.1f"
 """
 0.1c : add getaddresssince(since, minconf, address)
 0.1d : add native command proxy, gettransaction
 0.1e : add getblock(hash)
+0.1f : add getwalletinfo
 """
 
 app_log = getLogger("tornado.application")
@@ -93,7 +94,7 @@ class Node:
         Sends a ping if 29 sec or more passed since last activity, to keep connection open
         :return:
         """
-        if self.connection.last_activity < time.time() - 29:
+        if self.connection.last_activity < time() - 29:
             # print("Sending Ping")
             self.connection.command("api_ping")
 
@@ -103,13 +104,13 @@ class Node:
         :return:
         """
         # Give it some time to start and do things
-        time.sleep(10)
+        sleep(10)
         while not self.stop_event.is_set():
             if self.poll:
                 self._poll()
             self._ping_if_needed()
             # 10 sec is a good compromise.
-            time.sleep(10)
+            sleep(10)
 
     """
     All json-rpc calls are directly mapped to async methods here thereafter:
@@ -162,6 +163,46 @@ class Node:
         except Exception as e:
             info = {"version": self.config.version, "error": str(e)}
         return info
+
+    @Asyncttlcache(ttl=10)
+    async def getwalletinfo(self, *args, **kwargs) -> dict:
+        """
+        https://bitcoin.org/en/developer-reference#getwalletinfo
+        takes an extra bool param: ignore balance. False by default for BTC compatibility.
+        Since balance checks take time, allow to spare significant ressurces by not asking them unless nedded.
+        """
+        try:
+            if len(args) >1:
+                ignore_balance = args[1]  #  0 is self
+            else:
+                ignore_balance = False
+            wallet = {
+                "walletname": "bismuthd wallet",  # (string) the wallet name
+                "walletversion": wallet_version,  # (numeric) the version of the RPC wallet lib
+                "version": self.config.version,  # (numeric) the version of the running RPC server
+                "encrypted": self.wallet.encrypted,  # (boolean) Is the wallet encrypted? - BIS specific
+                "keypoololdest": 0,  # (numeric) timestamp of oldest pre-generated key in the key pool - N/A, 0 for BIS
+                "keypoolsize": 0,  # (numeric) how many new keys are pre-generated - N/A, 0 for BIS
+                "unlocked_until": self.wallet.unlocked_until(),  # (numeric) the timestamp that the wallet is unlocked for transfers,
+                # or 0 if the wallet is locked
+                "paytxfee": 0.01,  # (numeric) the transaction fee configuration, fixed 0.01 for BIS,
+                # not accounting variable part for data.
+                "private_keys_enabled": True  # (boolean) false if privatekeys are disabled for this wallet
+                # (enforced watch-only wallet)
+            }
+            if not ignore_balance:
+                balance = self.getbalance()
+                tx_count = -1
+                wallet["balance"] = balance  # (numeric) the total confirmed balance of the wallet in BIS.
+                # main account only, see getbalance by address
+                wallet["unconfirmed_balance"] = balance  # (numeric) Same as balance for BIS
+                wallet["immature_balance"] = 0  # (numeric) the total immature balance of the wallet in BIS - Always 0
+                wallet["txcount"] = tx_count  # (numeric) the total number of transactions in the wallet.
+                # Not implemented, -1 for Bismuth atm.
+
+        except Exception as e:
+            wallet = {"version": self.config.version, "error": str(e)}
+        return wallet
 
     # @Asyncttlcache(ttl=10)
     async def getblockhash(self, *args, **kwargs):
