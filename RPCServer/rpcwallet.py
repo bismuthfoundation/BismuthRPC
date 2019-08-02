@@ -23,7 +23,7 @@ from polysign.signerfactory import SignerFactory
 
 from rpckeys import Key
 
-__version__ = "0.0.6"
+__version__ = "0.0.61"
 
 
 app_log = getLogger("tornado.application")
@@ -270,6 +270,8 @@ class Wallet:
         :param transaction: an unsigned transaction from _make_unsigned_transaction
         :return: List. A signed transaction.
         """
+        if self.unlocked_until() <= 0:
+            raise LockedWallet
         address = transaction[1]
         if float(transaction[3]) < 0:
             raise NegativeAmount
@@ -391,6 +393,8 @@ class Wallet:
         :return:
         """
         # TODO: Handle rescan when balances will be ok.
+        if self.unlocked_until() <= 0:
+            raise LockedWallet
         the_key = Key(verbose=self.verbose)
         the_key.from_privkey(privkey)
         account = self._get_account(account_name)
@@ -406,6 +410,8 @@ class Wallet:
         returns a new address for the given account.
         Wallet must be un-encrypted, or passphrase be in memory.
         """
+        if self.unlocked_until() <= 0:
+            raise LockedWallet
         account_dict = self._get_account(
             an_account
         )  # This will handle address creation if doesn't exists yet.
@@ -437,6 +443,8 @@ class Wallet:
         Saves the whole wallet directory in a zip or tgz archive
         """
         # Test possible path existence
+        if self.unlocked_until() <= 0:
+            raise LockedWallet
         backup_path = os.path.dirname(os.path.abspath(afilename))
         if not os.path.exists(backup_path):
             raise InvalidPath
@@ -453,6 +461,8 @@ class Wallet:
         """
         Sends back a list of all privkeys for the wallet.
         """
+        if self.unlocked_until() <= 0:
+            raise LockedWallet
         # Test possible path existence
         dump_path = os.path.dirname(os.path.abspath(afilename))
         if not os.path.exists(dump_path):
