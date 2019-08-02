@@ -5,18 +5,23 @@ Will eventually be merged with node keys management to avoid duplicate code.
 @EggPool
 """
 
+import base64
 # import base64, os, getpass, hashlib
 # from Crypto import Random
-# from simplecrypt import decrypt
+
 # import os
 import hashlib
-import base64
-from Cryptodome.PublicKey import RSA
-from Cryptodome.Cipher import AES
-from Cryptodome.Signature import PKCS1_v1_5
-from Cryptodome.Hash import SHA
 
-__version__ = "0.0.4"
+from Cryptodome.Hash import SHA
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Signature import PKCS1_v1_5
+
+from simplecrypt import decrypt, encrypt
+
+__version__ = "0.0.5"
+
+
+# TODO: maybe keep this class for compatibility, but use polysign instead of direct RSA calls.
 
 
 class Key:
@@ -25,15 +30,21 @@ class Key:
     """
 
     # TODO: Could add a "label" later on
-    __slots__ = ('verbose', 'encrypted', 'privkey', 'pubkey', 'address', 'IV', 'passphrase')
+    __slots__ = (
+        "verbose",
+        "encrypted",
+        "privkey",
+        "pubkey",
+        "address",
+        "passphrase",
+    )
 
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.encrypted = False
-        self.privkey = ''
-        self.pubkey = ''
-        self.address = ''
-        self.IV = None
+        self.privkey = ""
+        self.pubkey = ""
+        self.address = ""
         self.passphrase = None
 
     @property
@@ -41,7 +52,12 @@ class Key:
         """
         The core properties as a dict
         """
-        return {"address": self.address, "encrypted": self.encrypted, "privkey": self.privkey, "pubkey": self.pubkey}
+        return {
+            "address": self.address,
+            "encrypted": self.encrypted,
+            "privkey": self.privkey,
+            "pubkey": self.pubkey,
+        }
 
     @property
     def hashed_pubkey(self):
@@ -68,6 +84,7 @@ class Key:
             self.key = value
         return self
         """
+        raise RuntimeError("key.from_dict broken")
 
     def from_list(self, alist):
         """
@@ -123,48 +140,34 @@ class Key:
         self.address = hashlib.sha224(self.pubkey.encode("utf-8")).hexdigest()
         return self.as_dict
 
-    def crypt(self, IV='', passphrase=''):
+    def crypt(self, passphrase=""):
         """
-        Encodes privkey only with IV and passphrase
+        Encodes privkey only with passphrase
         """
         if self.encrypted:
             raise AlreadyEncrypted
-        if IV == '' or passphrase == '':
-            IV = self.IV
+        if passphrase == "":
             passphrase = self.passphrase
-        if IV == '' or passphrase == '':
+        if passphrase == "":
             raise NoCryptCredentials
-        # fixed length key is needed, use hash
-        key = hashlib.sha256(passphrase.encode("utf-8")).digest()
-        mode = AES.MODE_CBC
-        encryptor = AES.new(key, mode, IV=IV)
-        # TODO : strip header/footer
-        # Has to be a multiple of 16
-        extra = len(self.privkey) % 16
-        self.privkey += ' ' * (16 - extra)
-        # print("clear", self.privkey, "*", len(self.privkey))
-        self.privkey = encryptor.encrypt(self.privkey)
+        self.privkey = encrypt(passphrase, data=self.privkey)
         self.encrypted = True
         return self.as_dict
 
-    def decrypt(self, IV='', passphrase=''):
+    def decrypt(self, passphrase=""):
         """
-        Decodes privkey with IV and passphrase
+        Decodes privkey with passphrase
         """
-        # TODO: some code here to factorize.
         if not self.encrypted:
             raise AlreadyEncrypted
-        if IV == '' or passphrase == '':
-            IV = self.IV
+        if passphrase == "":
             passphrase = self.passphrase
-        if IV == '' or passphrase == '':
+        if passphrase == "":
             raise NoCryptCredentials
-        # fixed length key is needed, use hash
-        key = hashlib.sha256(passphrase.encode("utf-8")).digest()  # TODO: we could store key once
-        mode = AES.MODE_CBC
-        decryptor = AES.new(key, mode, IV=IV)
-        # TODO: reinject header/footer
-        self.privkey = decryptor.decrypt(self.privkey).strip()
+        decrypted = decrypt(passphrase, data=self.privkey)
+        if "-----BEGIN RSA PRIVATE KEY-----" not in decrypted:
+            raise BadCryptCredentials
+        self.privkey = decrypted
         self.encrypted = False
         return self.as_dict
 
@@ -176,19 +179,25 @@ Custom exceptions
 
 class AlreadyEncrypted(Exception):
     code = -32001
-    message = 'Key is already encrypted'
+    message = "Key is already encrypted"
     data = None
 
 
 class AlreadyDecrypted(Exception):
     code = -32002
-    message = 'Key is already decrypted'
+    message = "Key is already decrypted"
     data = None
 
 
 class NoCryptCredentials(Exception):
     code = -32003
-    message = 'Crypt credentials required'
+    message = "Crypt credentials required"
+    data = None
+
+
+class BadCryptCredentials(Exception):
+    code = -32004
+    message = "Wrong crypt credentials"
     data = None
 
 
