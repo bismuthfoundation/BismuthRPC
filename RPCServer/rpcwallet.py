@@ -82,6 +82,17 @@ class Wallet:
             self.unlock_timeout = 0
         return self.unlock_timeout
 
+    def lock(self) -> None:
+        if self.encrypted:
+            self.passphrase = ""
+            self.unlock_timeout = 0
+
+    def set_passphrase(self, passphrase, timeout):
+        if not self.encrypted:
+            self.passphrase = passphrase
+            self.unlock_timeout = time() + timeout
+        return None
+
     def load(self):
         """
         Loads the current wallet state or init if the dir is empty.
@@ -262,6 +273,8 @@ class Wallet:
         address = transaction[1]
         if float(transaction[3]) < 0:
             raise NegativeAmount
+        if self.unlocked_until() <= 0:
+            raise LockedWallet
         # signed_part has to be a tuple, or the signature won't match
         signed_part = tuple(
             transaction[:4] + transaction[6:8]
@@ -515,6 +528,11 @@ class NegativeAmount(Exception):
     message = "Can't use a negative amount"
     data = None
 
+
+class LockedWallet(Exception):
+    code = -33005
+    message = "Wallet is locked"
+    data = None
 
 if __name__ == "__main__":
     print("I'm a module, can't run!")

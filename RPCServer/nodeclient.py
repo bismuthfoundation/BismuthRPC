@@ -205,6 +205,26 @@ class Node:
             wallet = {"version": self.config.version, "error": str(e)}
         return wallet
 
+    async def walletlock(self, *args, **kwargs):
+        """
+        Forgets the passphrase, locks the wallet
+        """
+        try:
+            self.wallet.lock()
+            return None
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
+    async def walletpassphrase(self, *args, **kwargs):
+        """
+        Stores the passphrase for timeout seconds
+        """
+        try:
+            passphrase, timeout = args[1], args[2]
+            return self.wallet.set_passphrase(passphrase, timeout)
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
     # @Asyncttlcache(ttl=10)
     async def getblockhash(self, *args, **kwargs):
         """
