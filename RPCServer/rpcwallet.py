@@ -19,12 +19,10 @@ import zipfile
 from logging import getLogger
 
 from rpckeys import Key
+from polysign.signerfactory import SignerFactory
 
 __version__ = "0.0.6"
 
-RE_RSA_ADDRESS = re.compile(r"[abcdef0123456789]{56}")
-# TODO: Use Polysign now.
-RE_ECDSA_ADDRESS = re.compile(r"^Bis")
 
 app_log = getLogger("tornado.application")
 
@@ -330,6 +328,7 @@ class Wallet:
         except Exception as e:
             raise ValueError("Unknown address")
 
+    """
     def address_is_valid(self, address: str) -> bool:
         if RE_RSA_ADDRESS.match(address):
             # RSA, 56 hex
@@ -342,6 +341,7 @@ class Wallet:
                 # ecdsa, around 37
                 return True
         return False
+    """
 
     def validate_address(self, address):
         """
@@ -351,7 +351,7 @@ class Wallet:
         :return: dict
         """
         # Format check
-        info = {"address": address, "valid": self.address_is_valid(address)}
+        info = {"address": address, "valid": SignerFactory.address_is_valid(address)}
         # If this address in our wallet?
         if address in self.address_to_account:
             account_name = self.address_to_account[address]
