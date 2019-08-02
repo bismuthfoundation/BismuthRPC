@@ -154,8 +154,34 @@ Response:
     "nextblockhash": "ef8d35e00295f877039354d4cbcaa395616dc89763afa15d4374d838"
 }  
 ```
-  
-## Implemented, need api handler in node but this node side code is already coded and successfully tested
+
+
+* getwalletinfo - (ignore_balances=False) - Returns info about the wallet  
+  See https://bitcoin.org/en/developer-reference#getwalletinfo  
+  ignore_balances is Bismuth specific. Balance collection is a costly process, so we can spare resources by requesting them only if needed.  
+  defaut bahaviour (no option, ignore_balances=false) is bitcoin compatible.  
+  txcount answer is not implemented, will always return -1.  
+  Bismuth specific: also infludes an "encrypted" boolean, since bismuth allows for unencrypted wallets.
+
+Example of `getwalletinfo` (default ignore_balances=False): 
+
+```
+{
+  "walletname": "bismuthd wallet",
+  "walletversion": "0.0.6",
+  "version": "0.0.36",
+  "encrypted": false,
+  "keypoololdest": 0,
+  "keypoolsize": 0,
+  "unlocked_until": 1564841872,
+  "paytxfee": 0.01,
+  "private_keys_enabled": true,
+  "balance": 0,
+  "unconfirmed_balance": 0,
+  "immature_balance": 0,
+  "txcount": -1
+}
+```
 
 * validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
   See https://bitcoin.org/en/developer-reference#validateaddress
@@ -262,9 +288,6 @@ response
 ```
 
 ## Working on
-
-* getwalletinfo - Requested for exchange need  
-  https://bitcoin.org/en/developer-reference#getwalletinfo
 
 * Wallet encryption - Requested for exchange need
 

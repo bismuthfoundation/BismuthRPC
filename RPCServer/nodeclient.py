@@ -164,7 +164,6 @@ class Node:
             info = {"version": self.config.version, "error": str(e)}
         return info
 
-    @Asyncttlcache(ttl=10)
     async def getwalletinfo(self, *args, **kwargs) -> dict:
         """
         https://bitcoin.org/en/developer-reference#getwalletinfo
@@ -172,10 +171,9 @@ class Node:
         Since balance checks take time, allow to spare significant ressurces by not asking them unless nedded.
         """
         try:
-            if len(args) >1:
+            ignore_balance = False
+            if len(args) > 1:
                 ignore_balance = args[1]  #  0 is self
-            else:
-                ignore_balance = False
             wallet = {
                 "walletname": "bismuthd wallet",  # (string) the wallet name
                 "walletversion": wallet_version,  # (numeric) the version of the RPC wallet lib
@@ -191,7 +189,10 @@ class Node:
                 # (enforced watch-only wallet)
             }
             if not ignore_balance:
-                balance = self.getbalance()
+                balance = await self.getbalance()
+                if type(balance) is dict and "error" in balance and balance["error"] != "":
+                    balance = -1
+                print("balance", balance)
                 tx_count = -1
                 wallet["balance"] = balance  # (numeric) the total confirmed balance of the wallet in BIS.
                 # main account only, see getbalance by address
@@ -789,12 +790,15 @@ class Node:
             if minconf < 1:
                 minconf = 1
             # print('getb args', args)
-            account = args[1]
+            account = args[1] if len(args) > 1 else ""
             addresses = await self.getaddressesbyaccount(self, account)
             app_log.info("getbalance {} {} {}".format(account, addresses, minconf))
             balance = self.connection.command("api_getbalance", [addresses, minconf])
             return balance
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             return {"version": self.config.version, "error": str(e)}
 
     async def getbalancebyaddress(self, *args, **kwargs):

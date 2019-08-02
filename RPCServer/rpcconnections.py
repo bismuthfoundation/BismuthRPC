@@ -134,12 +134,13 @@ class Connection(object):
                     for option in options:
                         self._send(option, retry=False)
                 ret = self._receive()
+                # print("ret", ret)
                 return ret
             except Exception as e:
                 """
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                print(exc_type, fname, exc_tb.tb_lineno)
+                print(exc_type, fname, exc_tb.tb_lineno) 
                 """
                 #  TODO : better handling of tries and delay between
                 if self.verbose:
