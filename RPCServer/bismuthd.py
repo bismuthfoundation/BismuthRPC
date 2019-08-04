@@ -61,7 +61,7 @@ if __name__ == "__main__":
     except Exception as e:
         # At launch, it's ok to close if the node is not available.
         # TODO: once started, disconnects and reconnects have to be taken care of seemlessly.
-        app_log.error("Unable to connect to node :", e)
+        app_log.error("Unable to connect to node: {}".format(e))
         sys.exit()
 
     # see http://www.tornadoweb.org/en/stable/httpserver.html#http-server for ssl

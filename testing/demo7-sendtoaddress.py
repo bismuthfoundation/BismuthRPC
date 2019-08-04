@@ -16,7 +16,6 @@ jsonrpcclient.config.validate = False
 # The test bismuthd.py server
 client = HTTPClient("http://username:password@127.0.0.1:8115/")
 
-
 ## AUTH ##
 
 # Simple Auth - see http://docs.python-requests.org/en/master/user/authentication/
@@ -28,16 +27,21 @@ client.session.headers.update({"Connection": "close"})
 
 ## Requests ##
 
+# Node info (optional)
 client.request("getinfo")
-
-# New functions
-# client.request('getblocksince', 1200000)
-
-client.request(
-    "getaddresssince",
-    1216000,
-    1,
-    "9ba0f8ca03439a8b4222b256a5f56f4f563f6d83755f525992fa5daf",
+print()
+# Check balance (optional)
+wallet = client.request("getwalletinfo")
+if wallet["encrypted"]:
+    # try to decrypt
+    res = client.request("walletpassphrase", "password", 60)
+print()
+wallet = client.request("getwalletinfo")
+print()
+res = client.request(
+    "sendtoaddress",
+    "a48c6d81951e404e305957ddd12464501b368d57db14191d48082df6",
+    0,
+    "Extra",
 )
-
-# client.request('importprivkey','-----BEGIN RSA PRIVATE KEY-----\nHERE_IS_THE_PRIVKEY\n-----END RSA PRIVATE KEY-----')
+print(res)

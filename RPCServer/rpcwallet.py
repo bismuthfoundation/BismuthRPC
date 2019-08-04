@@ -14,16 +14,18 @@ import io
 import json
 import os
 import re
-import time
+import sys
 import zipfile
 from logging import getLogger
 from time import time
+from simplecrypt import encrypt, decrypt
+from base64 import b64decode, b64encode
 
 from polysign.signerfactory import SignerFactory
 
 from rpckeys import Key
 
-__version__ = "0.0.61"
+__version__ = "0.0.64"
 
 
 app_log = getLogger("tornado.application")
@@ -88,9 +90,35 @@ class Wallet:
             self.unlock_timeout = 0
 
     def set_passphrase(self, passphrase, timeout):
-        if not self.encrypted:
+        if self.encrypted:
             self.passphrase = passphrase
-            self.unlock_timeout = time() + timeout
+            self.unlock_timeout = int(time()) + timeout
+        return None
+
+    def encrypt(self, passphrase):
+        if self.encrypted:
+            raise AlreadyEncrypted
+        # encrypt all addresses
+        for account_name, account_details in self._parse_accounts():
+            try:
+                if account_details["encrypted"]:
+                    print("{} is already encrypted".format(account_name))
+                for address in account_details["addresses"]:
+                    address[2] = b64encode(encrypt(password=passphrase, data=address[2])).decode('utf-8')
+                    # address[2] = decrypt(password=passphrase, data=address[2]).decode('utf-8')
+                    # print(address)  # 0,1,2=privkey
+                account_details["encrypted"] = True
+                self._save_account(account_details, account=account_name)
+            except Exception as e:
+                print(e)
+                raise
+        #
+        self.index["encrypted"] = True
+        self.encrypted = True
+        index_fname = self.path + "/index.json"
+        with open(index_fname, "w") as outfile:
+            json.dump(self.index, outfile)
+        self.lock()
         return None
 
     def load(self):
@@ -98,33 +126,38 @@ class Wallet:
         Loads the current wallet state or init if the dir is empty.
         """
         # At this point the dir exists.
-        index_fname = self.path + "/index.json"
-        rindex_fname = self.path + "/rindex.json"
-        if not os.path.exists(index_fname):
-            if self.verbose:
-                app_log.warning(
-                    "{} does not exist, creating default".format(index_fname)
-                )
-                # Default index file
-                self.index = {"version": __version__, "encrypted": False}
-                with open(index_fname, "w") as outfile:
-                    json.dump(self.index, outfile)
-                # Inverted index
-                self.address_to_account = {}
-                self._save_rindex()
-        # If no default address, create one
-        addresses = self.get_account_address()
-        if len(addresses) < 1:
-            app_log.warning("No default address, creating one")
-            self.get_new_address()
-        else:
-            with open(index_fname) as json_file:
-                self.index = json.load(json_file)
-            try:
-                with open(rindex_fname) as json_file:
-                    self.address_to_account = json.load(json_file)
-            except:
-                self.address_to_account = {}
+        try:
+            index_fname = self.path + "/index.json"
+            rindex_fname = self.path + "/rindex.json"
+            if not os.path.exists(index_fname):
+                if self.verbose:
+                    app_log.warning(
+                        "{} does not exist, creating default".format(index_fname)
+                    )
+                    # Default index file
+                    self.index = {"version": __version__, "encrypted": False}
+                    with open(index_fname, "w") as outfile:
+                        json.dump(self.index, outfile)
+                    # Inverted index
+                    self.address_to_account = {}
+                    self._save_rindex()
+            # If no default address, create one
+            addresses = self.get_account_address()
+            if len(addresses) < 1:
+                app_log.warning("No default address, creating one")
+                self.get_new_address()
+            else:
+                with open(index_fname) as json_file:
+                    self.index = json.load(json_file)
+                try:
+                    with open(rindex_fname) as json_file:
+                        self.address_to_account = json.load(json_file)
+                except:
+                    self.address_to_account = {}
+            self.encrypted = self.index["encrypted"]
+        except Exception as e:
+            app_log.error("Error loading default wallet")
+            sys.exit()
 
     def _parse_accounts(self):
         """
@@ -194,7 +227,9 @@ class Wallet:
             fname = path + "/" + account + ".json"
         if not os.path.isfile(fname):
             if self.verbose:
-                app_log.info("{} does not exist, creating default address".format(fname))
+                app_log.info(
+                    "{} does not exist, creating default address".format(fname)
+                )
             # Default account file
             self.key.generate()  # This takes some time.
             res = {"encrypted": False, "addresses": [self.key.as_list]}
@@ -242,7 +277,7 @@ class Wallet:
         :return: List. An unsigned transaction, mempool format
         """
         if float(timestamp) <= 0:
-            timestamp = "%.2f" % time.time()
+            timestamp = "%.2f" % time()
         else:
             # correct format %.2f is critical for signature validity
             timestamp = "%.2f" % float(timestamp)
@@ -271,12 +306,12 @@ class Wallet:
         :return: List. A signed transaction.
         """
         if self.unlocked_until() <= 0:
-            raise LockedWallet
+            raise ValueError("LockedWallet")
         address = transaction[1]
         if float(transaction[3]) < 0:
-            raise NegativeAmount
+            raise ValueError("NegativeAmount")
         if self.unlocked_until() <= 0:
-            raise LockedWallet
+            raise ValueError("LockedWallet")
         # signed_part has to be a tuple, or the signature won't match
         signed_part = tuple(
             transaction[:4] + transaction[6:8]
@@ -284,6 +319,9 @@ class Wallet:
         # Find the keys and init the crypto thingy
         the_key = Key()
         the_key.from_list(self._get_keys_for_address(address))
+        if "-----BEGIN RSA PRIVATE KEY-----" not in the_key.privkey:
+            the_key.privkey = decrypt(password=self.passphrase, data=b64decode(the_key.privkey)).decode('utf-8')
+        print("temp", the_key.privkey)
         # print('signed part', signed_part)
         signature_enc = the_key.sign(signed_part, base64_output=True)
         public_key_hashed = the_key.hashed_pubkey
@@ -315,17 +353,21 @@ class Wallet:
             addresses.extend(self.get_addresses_by_account(account_name))
         return addresses
 
-    def get_account_address(self, anaccount=""):
+    def get_account_address(self, an_account: str=""):
         """
         returns the default address of the given account
         """
-        account = self._get_account(
-            anaccount
-        )  # This will handle address creation if doesn't exists yet.
-        addresses = account["addresses"][0]
-        # Addresses is on fact [address,privkey,pubkey]
-        # with privkey encrypted if wallet is.
-        return addresses[0]
+        try:
+            account = self._get_account(
+                an_account
+            )  # This will handle address creation if doesn't exists yet.
+            addresses = account["addresses"][0]
+            # Addresses is on fact [address,privkey,pubkey]
+            # with privkey encrypted if wallet is.
+            return addresses[0]
+        except Exception as e:
+            app_log.warning("Error loading account '{}'".format(an_account))
+            raise
 
     def get_account(self, address):
         """
@@ -543,6 +585,13 @@ class LockedWallet(Exception):
     code = -33005
     message = "Wallet is locked"
     data = None
+
+
+class AlreadyEncrypted(Exception):
+    code = -33005
+    message = "Wallet is already encrypted"
+    data = None
+
 
 if __name__ == "__main__":
     print("I'm a module, can't run!")

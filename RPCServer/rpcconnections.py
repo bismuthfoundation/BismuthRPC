@@ -18,7 +18,7 @@ LTIMEOUT = 45
 # Fixed header length
 SLEN = 10
 
-__version__ = '0.1.7'
+__version__ = "0.1.7"
 
 app_log = getLogger("tornado.application")
 
@@ -26,9 +26,9 @@ app_log = getLogger("tornado.application")
 class Connection(object):
     """Connection to a Bismuth Node. Handles auto reconnect when needed"""
 
-    #  TODO: add a maintenance thread that requests blockheight every 30 sec and updates balances when new blocks() are there.
+    # TODO: add a maintenance thread that requests blockheight every 30 sec and updates balances when new blocks() are there.
 
-    __slots__ = ('ipport', 'verbose', 'sdef', 'stats', 'last_activity', 'command_lock')
+    __slots__ = ("ipport", "verbose", "sdef", "stats", "last_activity", "command_lock")
 
     def __init__(self, ipport, verbose=False):
         """ipport is an (ip, port) tuple"""
@@ -59,7 +59,9 @@ class Connection(object):
             self.sdef.settimeout(LTIMEOUT)
             # Make sure the packet is sent in one call
             sdata = str(json.dumps(data))
-            res = self.sdef.sendall(str(len(sdata)).encode("utf-8").zfill(slen) + sdata.encode("utf-8"))
+            res = self.sdef.sendall(
+                str(len(sdata)).encode("utf-8").zfill(slen) + sdata.encode("utf-8")
+            )
             self.last_activity = time.time()
             # res is always 0 on linux
             if self.verbose:
@@ -81,7 +83,9 @@ class Connection(object):
                 self.sdef.settimeout(LTIMEOUT)
                 # Make sure the packet is sent in one call
                 self.sdef.sendall(
-                    str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen) + str(json.dumps(data)).encode("utf-8"))
+                    str(len(str(json.dumps(data)))).encode("utf-8").zfill(slen)
+                    + str(json.dumps(data)).encode("utf-8")
+                )
                 return True
             except Exception as e:
                 self.sdef = None
@@ -110,7 +114,7 @@ class Connection(object):
                 chunks.append(chunk)
                 bytes_recd = bytes_recd + len(chunk)
             self.last_activity = time.time()
-            segments = b''.join(chunks).decode("utf-8")
+            segments = b"".join(chunks).decode("utf-8")
             return json.loads(segments)
         except Exception as e:
             """
@@ -144,7 +148,9 @@ class Connection(object):
                 """
                 #  TODO : better handling of tries and delay between
                 if self.verbose:
-                    app_log.warning("Error <{}> sending command, trying to reconnect.".format(e))
+                    app_log.warning(
+                        "Error <{}> sending command, trying to reconnect.".format(e)
+                    )
                 self.check_connection()
                 self._send(command)
                 if options:

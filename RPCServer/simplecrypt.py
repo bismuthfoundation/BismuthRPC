@@ -14,7 +14,9 @@ SALT_LEN = (128, 256, 256)
 HASH = SHA256
 PREFIX = b"sc"
 HEADER = (PREFIX + b"\x00\x00", PREFIX + b"\x00\x01", PREFIX + b"\x00\x02")
-LATEST = 2  # index into SALT_LEN, EXPANSION_COUNT, HEADER
+# Beware: bismuth wallet uses slot 2, more cpu heavy.
+# On rpc server, since we decrypt on demand, we want faster decrypt.
+LATEST = 1  # index into SALT_LEN, EXPANSION_COUNT, HEADER
 
 # lengths here are in bits, but pcrypto uses block size in bytes
 HALF_BLOCK = AES.block_size * 8 // 2

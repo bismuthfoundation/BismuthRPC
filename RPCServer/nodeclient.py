@@ -56,10 +56,13 @@ class Node:
     )
 
     def __init__(self, config):
-        self.config = config
-        self.wallet = Wallet(verbose=config.verbose)
-        self.stop_event = threading.Event()
-        self.last_height = 0
+        try:
+            self.config = config
+            self.wallet = Wallet(verbose=config.verbose)
+            self.stop_event = threading.Event()
+            self.last_height = 0
+        except Exception as e:
+            print("conn0", e)
         try:
             # config may not know of poll, that's ok.
             self.poll = self.config.poll
@@ -67,10 +70,16 @@ class Node:
             self.poll = False
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
-        self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
-        self.watchdog_thread = threading.Thread(target=self._watchdog)
-        self.watchdog_thread.daemon = True
-        self.watchdog_thread.start()
+        try:
+            self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
+        except Exception as e:
+            print("conn", e)
+        try:
+            self.watchdog_thread = threading.Thread(target=self._watchdog)
+            self.watchdog_thread.daemon = True
+            self.watchdog_thread.start()
+        except Exception as e:
+            print("conn2", e)
 
     def _poll(self):
         """
@@ -190,15 +199,33 @@ class Node:
             }
             if not ignore_balance:
                 balance = await self.getbalance()
-                if type(balance) is dict and "error" in balance and balance["error"] != "":
+                if (
+                    type(balance) is dict
+                    and "error" in balance
+                    and balance["error"] != ""
+                ):
                     balance = -1
                 print("balance", balance)
                 tx_count = -1
-                wallet["balance"] = balance  # (numeric) the total confirmed balance of the wallet in BIS.
+                wallet[
+                    "balance"
+                ] = (
+                    balance
+                )  # (numeric) the total confirmed balance of the wallet in BIS.
                 # main account only, see getbalance by address
-                wallet["unconfirmed_balance"] = balance  # (numeric) Same as balance for BIS
-                wallet["immature_balance"] = 0  # (numeric) the total immature balance of the wallet in BIS - Always 0
-                wallet["txcount"] = tx_count  # (numeric) the total number of transactions in the wallet.
+                wallet[
+                    "unconfirmed_balance"
+                ] = balance  # (numeric) Same as balance for BIS
+                wallet[
+                    "immature_balance"
+                ] = (
+                    0
+                )  # (numeric) the total immature balance of the wallet in BIS - Always 0
+                wallet[
+                    "txcount"
+                ] = (
+                    tx_count
+                )  # (numeric) the total number of transactions in the wallet.
                 # Not implemented, -1 for Bismuth atm.
 
         except Exception as e:
@@ -222,6 +249,16 @@ class Node:
         try:
             passphrase, timeout = args[1], args[2]
             return self.wallet.set_passphrase(passphrase, timeout)
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
+    async def encryptwallet(self, *args, **kwargs):
+        """
+        Encrypt wallet with given passphrase
+        """
+        try:
+            passphrase = args[1]
+            return self.wallet.encrypt(passphrase)
         except Exception as e:
             return {"version": self.config.version, "error": str(e)}
 
@@ -703,9 +740,12 @@ class Node:
                     address, to_address, amount, comment
                 )
             )
-            void = self.connection.command("mpinsert", [[transaction]])
+            res = self.connection.command("mpinsert", [[transaction]])
             # TODO: when implemented node side, use returned status code
-            # print("mpinsert res", void)
+            print("mpinsert res", res)
+            res = res[-1]
+            if res != "Success":
+                return {"version": self.config.version, "error": res}
             txid = transaction[4][:56]
             return txid
         except Exception as e:
