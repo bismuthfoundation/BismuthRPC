@@ -25,7 +25,7 @@ from polysign.signerfactory import SignerFactory
 
 from rpckeys import Key
 
-__version__ = "0.0.64"
+__version__ = "0.0.65"
 
 
 app_log = getLogger("tornado.application")
@@ -156,7 +156,10 @@ class Wallet:
                     self.address_to_account = {}
             self.encrypted = self.index["encrypted"]
         except Exception as e:
-            app_log.error("Error loading default wallet")
+            app_log.error("Error loading default wallet: {}".format(str(e)))
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            app_log.error("{} {} {}".format((exc_type, fname, exc_tb.tb_lineno)))
             sys.exit()
 
     def _parse_accounts(self):

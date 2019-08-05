@@ -22,7 +22,7 @@ import rpcconfig
 from nodeclient import Node
 from tornado_jsonrpc import JSONRPCHandler
 
-__version__ = "0.0.37"
+__version__ = "0.0.37d"
 
 
 if __name__ == "__main__":
