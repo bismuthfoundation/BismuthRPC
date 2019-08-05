@@ -25,7 +25,7 @@ from polysign.signerfactory import SignerFactory
 
 from rpckeys import Key
 
-__version__ = "0.0.65"
+__version__ = "0.0.66"
 
 
 app_log = getLogger("tornado.application")
@@ -134,13 +134,13 @@ class Wallet:
                     app_log.warning(
                         "{} does not exist, creating default".format(index_fname)
                     )
-                    # Default index file
-                    self.index = {"version": __version__, "encrypted": False}
-                    with open(index_fname, "w") as outfile:
-                        json.dump(self.index, outfile)
-                    # Inverted index
-                    self.address_to_account = {}
-                    self._save_rindex()
+                # Default index file
+                self.index = {"version": __version__, "encrypted": False}
+                with open(index_fname, "w") as outfile:
+                    json.dump(self.index, outfile)
+                # Inverted index
+                self.address_to_account = {}
+                self._save_rindex()
             # If no default address, create one
             addresses = self.get_account_address()
             if len(addresses) < 1:
