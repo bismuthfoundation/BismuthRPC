@@ -25,15 +25,16 @@ from ttlcache import Asyncttlcache
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = "0.0.10"
+__version__ = "0.0.17"
 
 # Interface versioning
-API_VERSION = "0.1f"
+API_VERSION = "0.1g"
 """
 0.1c : add getaddresssince(since, minconf, address)
 0.1d : add native command proxy, gettransaction
 0.1e : add getblock(hash)
 0.1f : add getwalletinfo
+0.1g : add encryptwallet, walletpassphrase, walletlock 
 """
 
 app_log = getLogger("tornado.application")

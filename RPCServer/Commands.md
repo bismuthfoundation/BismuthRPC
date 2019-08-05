@@ -11,6 +11,8 @@ This list and comments are WIP and are valid for version 0.1e of this Bismuthd A
 - 0.1c : add getaddresssince(since, minconf, address)  
 - 0.1d : add native command proxy and gettransaction  
 - 0.1e : add getblock(hash)
+- 0.1f : add getwalletinfo
+- 0.1g : add encryptwallet, walletpassphrase, walletlock 
 
 ## Accounts
 
@@ -183,6 +185,13 @@ Example of `getwalletinfo` (default ignore_balances=False):
 }
 ```
 
+* encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
+
+* walletpassphrase  -  (passphrase) (timeout)  -  Stores the wallet decryption key in memory for (timeout) seconds.  
+
+* walletlock  - Lock the wallet     
+  Removes the wallet encryption key from memory, locking the wallet. After calling this method, you will need to call walletpassphrase again before being able to call any methods which require the wallet to be unlocked. 
+
 * validateaddress  -  (bismuthaddress)  -  Return information about (bismuthaddress). 
   See https://bitcoin.org/en/developer-reference#validateaddress
 
@@ -289,7 +298,8 @@ response
 
 ## Working on
 
-* Wallet encryption - Requested for exchange need
+* Wallet encryption - Requested for exchange need.   
+  Done, remains walletpassphrasechange  -  (oldpassphrase) (newpassphrase)  -  Changes the wallet passphrase from (oldpassphrase) to (newpassphrase).  
 
 * stop  -  Stop bismuthd server.
 
@@ -327,15 +337,6 @@ The 4 following commands are to be coded in one go by the same person.
 See rpckeys.py and try_keys.py for the encryption/decryption logic.  
 See also https://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-python-with-pycrypto for background info
 
-* encryptwallet  -  (passphrase)  -  Encrypts the wallet with (passphrase).  
-  Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
-  This call returns the random IV used, that has to be stored with the passphrase. Both are needed to unlock the wallet.
-* walletpassphrase  -  (passphrase) (timeout)  -  Stores the wallet decryption key in memory for (timeout) seconds.  
-  passphrase is composed of the IV given by the encryptwallet or walletpassphrasechange call, plus the passphrase itself.
-* walletpassphrasechange  -  (oldpassphrase) (newpassphrase)  -  Changes the wallet passphrase from (oldpassphrase) to (newpassphrase).  
-  Bismuth uses a more secure encryption scheme, AES based, that uses also an IV.  
-  This call returns the random IV used.
-* walletlock  -   * Removes the wallet encryption key from memory, locking the wallet. After calling this method, you will need to call walletpassphrase again before being able to call any methods which require the wallet to be unlocked. 
 
 The more the project move forward, the more difficult it is to give small tasks for beginners.  
 So I won't add more here, but you can look at the code, and if you understand and feel comfortable with it, then pick a function from "To be implemented" and give it a try.  
