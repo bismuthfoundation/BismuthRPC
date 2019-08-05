@@ -67,7 +67,7 @@ class Wallet:
         if not os.path.exists(path):
             if self.verbose:
                 app_log.warning("Path {} does not exist, creating".format(path))
-                os.mkdir(path)
+            os.mkdir(path)
         # Since keys will be used everywhere, let's have our instance ready to run.
         self.key = Key(verbose=verbose)
         self.load()
