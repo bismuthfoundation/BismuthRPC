@@ -29,7 +29,7 @@ client = HTTPClient('http://username:password@127.0.0.1:8115/')
 ## AUTH ##
 
 # Simple Auth - see http://docs.python-requests.org/en/master/user/authentication/
-client.session.auth = ('username', 'password')
+client.session.auth = ('1username', 'password')
 # Unique cookie
 #client.session.auth = ('__cookie__', 'b16182fb2f0031f2fb2bafc01508a465b7bf52aeb584eff96deca07b9f0598ad')
 # See rpcauth

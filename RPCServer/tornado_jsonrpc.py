@@ -14,6 +14,8 @@ from copy import deepcopy
 from logging import getLogger
 from sys import exc_info
 
+from base64 import b64decode
+
 from tornado.web import RequestHandler
 
 MAX_ERROR_MESSAGE_LENGTH = 200
@@ -38,7 +40,23 @@ class JSONRPCHandler(RequestHandler):
         self.interface = interface
 
     async def get(self):
-        self.write("JSONRPC server handles only POST requests")
+        self.write("'JSON-RPC server handles only POST requests'")
+
+    async def prepare(self):
+        auth_header = self.request.headers.get("Authorization", "")
+        # print("auth_header", auth_header)
+        if not auth_header.startswith("Basic "):
+            self.set_status(401)
+            # self.write("'Auth required {}'".format(auth_header))
+            self.finish()
+        auth_decoded = b64decode(auth_header[6:]).decode('ascii')
+        username, password = str(auth_decoded).split(':', 1)
+        # print(username, password)
+        if (username, password) != (self.interface.config.rpcuser, self.interface.config.rpcpassword):
+            print("Auth failed")
+            self.set_status(403)
+            # self.write("'Auth Failed'")
+            self.finish()
 
     async def post(self, *args, **kwargs):
         try:

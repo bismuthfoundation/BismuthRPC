@@ -11,7 +11,6 @@ __version__ = '0.1.1'
 app_log = getLogger("tornado.application")
 
 
-
 class Get:
     # "param_name":["type"] or "param_name"=["type","property_name"]
     vars = {"bismuthnode": ["str"], "bismuthpath": ["str"], "rpcuser": ["str"], "rpcpassword": ["str"],
