@@ -11,29 +11,30 @@ Also handles wallet and accounts
 # Generic modules
 import os
 import sys
-# import re
 import threading
-import time
+from time import time, sleep
 from distutils.version import LooseVersion
 from logging import getLogger
 
 # Bismuth specific modules
 from rpcconnections import Connection
-from rpcwallet import Wallet
+from rpcwallet import Wallet, __version__ as wallet_version
 from ttlcache import Asyncttlcache
 
 """
 Note: connections.py is legacy. Will be replaced by a "command_handler" class. WIP, see protobuf code.
 """
 
-__version__ = '0.0.9'
+__version__ = "0.0.17"
 
 # Interface versioning
-API_VERSION = '0.1e'
+API_VERSION = "0.1g"
 """
 0.1c : add getaddresssince(since, minconf, address)
 0.1d : add native command proxy, gettransaction
 0.1e : add getblock(hash)
+0.1f : add getwalletinfo
+0.1g : add encryptwallet, walletpassphrase, walletlock 
 """
 
 app_log = getLogger("tornado.application")
@@ -44,13 +45,25 @@ class Node:
     Connects to a node.py via socket of use local filesystem if needed to interact with a running bismuth node.
     """
 
-    __slots__ = ("config", "wallet", "s", "connection", "stop_event", "last_height", "watchdog_thread", "poll")
+    __slots__ = (
+        "config",
+        "wallet",
+        "s",
+        "connection",
+        "stop_event",
+        "last_height",
+        "watchdog_thread",
+        "poll",
+    )
 
     def __init__(self, config):
-        self.config = config
-        self.wallet = Wallet(verbose=config.verbose)
-        self.stop_event = threading.Event()
-        self.last_height = 0
+        try:
+            self.config = config
+            self.wallet = Wallet(verbose=config.verbose)
+            self.stop_event = threading.Event()
+            self.last_height = 0
+        except Exception as e:
+            print("conn0", e)
         try:
             # config may not know of poll, that's ok.
             self.poll = self.config.poll
@@ -58,10 +71,16 @@ class Node:
             self.poll = False
         # TODO: raise error if missing critical info like bismuth node/path
         node_ip, node_port = self.config.bismuthnode.split(":")
-        self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
-        self.watchdog_thread = threading.Thread(target=self._watchdog)
-        self.watchdog_thread.daemon = True
-        self.watchdog_thread.start()
+        try:
+            self.connection = Connection((node_ip, int(node_port)), verbose=config.verbose)
+        except Exception as e:
+            print("conn", e)
+        try:
+            self.watchdog_thread = threading.Thread(target=self._watchdog)
+            self.watchdog_thread.daemon = True
+            self.watchdog_thread.start()
+        except Exception as e:
+            print("conn2", e)
 
     def _poll(self):
         """
@@ -85,10 +104,9 @@ class Node:
         Sends a ping if 29 sec or more passed since last activity, to keep connection open
         :return:
         """
-        if self.connection.last_activity < time.time() - 29:
+        if self.connection.last_activity < time() - 29:
             # print("Sending Ping")
-            ret = self.connection.command("api_ping")
-            # print(ret)
+            self.connection.command("api_ping")
 
     def _watchdog(self):
         """
@@ -96,13 +114,13 @@ class Node:
         :return:
         """
         # Give it some time to start and do things
-        time.sleep(10)
+        sleep(10)
         while not self.stop_event.is_set():
             if self.poll:
                 self._poll()
             self._ping_if_needed()
             # 10 sec is a good compromise.
-            time.sleep(10)
+            sleep(10)
 
     """
     All json-rpc calls are directly mapped to async methods here thereafter:
@@ -112,12 +130,13 @@ class Node:
     def stop(self, *args, **kwargs):
         """Clean stop the server"""
         app_log.info("Stopping Server")
-        self.connection.close(self.s)
+        self.connection.close()
         # TODO: Close possible open files and db connection
         #
         # TODO: Signal possible threads to terminate and wait.
         self.stop_event.set()
-        # self.watchdog_thread.join() It's a daemon thread, no need to wait, it can take up to 10 sec because of the sleep()
+        # self.watchdog_thread.join() It's a daemon thread, no need to wait,
+        # it can take up to 10 sec because of the sleep()
         return True
         # NOT So simple. Have to signal tornado app to close (and not leave the port open) see
         # https://stackoverflow.com/questions/5375220/how-do-i-stop-tornado-web-server
@@ -130,15 +149,22 @@ class Node:
         Returns a dict with the node info
         Could take a param like verbosity of returned info later.
         """
-        # WARNING: getinfo is deprecated and will be fully removed in 0.16. Projects should transition to using getblockchaininfo, getnetworkinfo, and getwalletinfo before upgrading to 0.16
-        # However we get all info in one go, and it can be cached for subsequent partial info requests from other listed commands.
+        # WARNING: getinfo is deprecated and will be fully removed in 0.16.
+        # Projects should transition to using getblockchaininfo, getnetworkinfo,
+        # and getwalletinfo before upgrading to 0.16
+        # However we get all info in one go,
+        # and it can be cached for subsequent partial info requests from other listed commands.
         try:
-            # TODO: connected check and reconnect if needed. But will be handled by the connection layer. Don't bother here.
-            # Moreover, it's not necessary to keep a connection open all the time. Not all commands need one, so it just need to connect on demand if it is not.
+            # TODO: connected check and reconnect if needed. But will be handled by the connection layer.
+            # Don't bother here.
+            # Moreover, it's not necessary to keep a connection open all the time.
+            # Not all commands need one, so it just need to connect on demand if it is not.
             info = self.connection.command("statusjson")
             """
-            info = {"version":self.config.version, "protocolversion":"mainnet0016", "walletversion":data[7], "testnet":False, # config data
-                    "balance":10.00, "blocks":data[5], "timeoffset":0, "connections":data[1], "difficulty":109.65, # live status
+            info = {"version":self.config.version, "protocolversion":"mainnet0016", 
+                    "walletversion":data[7], "testnet":False, # config data
+                    "balance":10.00, "blocks":data[5], "timeoffset":0, "connections":data[1], 
+                    "difficulty":109.65, # live status
                     "errors":""} # to keep bitcoind compatibility
             """
             # add extra info
@@ -148,18 +174,102 @@ class Node:
             info = {"version": self.config.version, "error": str(e)}
         return info
 
+    async def getwalletinfo(self, *args, **kwargs) -> dict:
+        """
+        https://bitcoin.org/en/developer-reference#getwalletinfo
+        takes an extra bool param: ignore balance. False by default for BTC compatibility.
+        Since balance checks take time, allow to spare significant ressurces by not asking them unless nedded.
+        """
+        try:
+            ignore_balance = False
+            if len(args) > 1:
+                ignore_balance = args[1]  #  0 is self
+            wallet = {
+                "walletname": "bismuthd wallet",  # (string) the wallet name
+                "walletversion": wallet_version,  # (numeric) the version of the RPC wallet lib
+                "version": self.config.version,  # (numeric) the version of the running RPC server
+                "encrypted": self.wallet.encrypted,  # (boolean) Is the wallet encrypted? - BIS specific
+                "keypoololdest": 0,  # (numeric) timestamp of oldest pre-generated key in the key pool - N/A, 0 for BIS
+                "keypoolsize": 0,  # (numeric) how many new keys are pre-generated - N/A, 0 for BIS
+                "unlocked_until": self.wallet.unlocked_until(),  # (numeric) the timestamp that the wallet is unlocked for transfers,
+                # or 0 if the wallet is locked
+                "paytxfee": 0.01,  # (numeric) the transaction fee configuration, fixed 0.01 for BIS,
+                # not accounting variable part for data.
+                "private_keys_enabled": True  # (boolean) false if privatekeys are disabled for this wallet
+                # (enforced watch-only wallet)
+            }
+            if not ignore_balance:
+                balance = await self.getbalance()
+                if (
+                    type(balance) is dict
+                    and "error" in balance
+                    and balance["error"] != ""
+                ):
+                    balance = -1
+                print("balance", balance)
+                tx_count = -1
+                wallet[
+                    "balance"
+                ] = (
+                    balance
+                )  # (numeric) the total confirmed balance of the wallet in BIS.
+                # main account only, see getbalance by address
+                wallet[
+                    "unconfirmed_balance"
+                ] = balance  # (numeric) Same as balance for BIS
+                wallet[
+                    "immature_balance"
+                ] = (
+                    0
+                )  # (numeric) the total immature balance of the wallet in BIS - Always 0
+                wallet[
+                    "txcount"
+                ] = (
+                    tx_count
+                )  # (numeric) the total number of transactions in the wallet.
+                # Not implemented, -1 for Bismuth atm.
+
+        except Exception as e:
+            wallet = {"version": self.config.version, "error": str(e)}
+        return wallet
+
+    async def walletlock(self, *args, **kwargs):
+        """
+        Forgets the passphrase, locks the wallet
+        """
+        try:
+            self.wallet.lock()
+            return None
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
+    async def walletpassphrase(self, *args, **kwargs):
+        """
+        Stores the passphrase for timeout seconds
+        """
+        try:
+            passphrase, timeout = args[1], args[2]
+            return self.wallet.set_passphrase(passphrase, timeout)
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
+    async def encryptwallet(self, *args, **kwargs):
+        """
+        Encrypt wallet with given passphrase
+        """
+        try:
+            passphrase = args[1]
+            return self.wallet.encrypt(passphrase)
+        except Exception as e:
+            return {"version": self.config.version, "error": str(e)}
+
     # @Asyncttlcache(ttl=10)
     async def getblockhash(self, *args, **kwargs):
         """
         Returns the hash of a given block_height
         """
         try:
-            """
-            self.connection.send("blockget")
-            self.connection.send(str(args[1]))
-            block = self.connection.receive()
-            """
-            block = self.connection.command('blockget', [str(args[1])])
+            block = self.connection.command("blockget", [str(args[1])])
             block = block[0][7]
         except Exception as e:
             block = {"version": self.config.version, "error": str(e)}
@@ -175,16 +285,10 @@ class Node:
     @Asyncttlcache(ttl=10)
     async def getrawmempool(self, *args, **kwargs):
         """
-        WIP
+        Returns mempool content
         """
         try:
-            """
-            self.connection.send("mempool")
-            self.connection.send([])
-            mempool = self.connection.receive()
-            """
-            mempool = self.connection.command('mempool', [[]])
-            # WIP
+            mempool = self.connection.command("mempool", [[]])
         except Exception as e:
             mempool = {"version": self.config.version, "error": str(e)}
         return mempool
@@ -216,7 +320,7 @@ class Node:
         """
         info = await self.getinfo()
         try:
-            blocks = info['blocks']
+            blocks = info["blocks"]
             return blocks
         except Exception as e:
             error = {"version": self.config.version, "error": str(e)}
@@ -265,7 +369,7 @@ class Node:
         """
         try:
             privkey = args[1]  #  0 is self
-            account_name = ''
+            account_name = ""
             if len(args) > 2:
                 account_name = args[2]
             rescan = False
@@ -320,13 +424,15 @@ class Node:
         """
         try:
             from_address, to_address, amount = args[1:4]  #  0 is self
-            data = ''
+            data = ""
             timestamp = 0
             if len(args) > 4:
                 data = args[4]
             if len(args) > 5:
                 timestamp = args[5]
-            return self.wallet.make_unsigned_transaction(from_address, to_address, amount, data, timestamp)
+            return self.wallet.make_unsigned_transaction(
+                from_address, to_address, amount, data, timestamp
+            )
         except Exception as e:
             return {"version": self.config.version, "error": str(e)}
 
@@ -355,12 +461,15 @@ class Node:
             format_option = False
             if len(args) > 2:
                 format_option = args[2]
+            # TODO: check txid format and len (56)
             """
             if not re.match('[a..zA..Z0..9\+/=]{56}', transaction):
                 # broken regexp
                 raise ValueError("Bad Transaction format")
             """
-            return self.connection.command("api_gettransaction", [transaction, format_option])
+            return self.connection.command(
+                "api_gettransaction", [transaction, format_option]
+            )
         except Exception as e:
             # print(e)
             return {"version": self.config.version, "error": str(e)}
@@ -377,45 +486,62 @@ class Node:
             res = self.connection.command("api_gettransaction", [transaction, True])
             # print("res", res)
             if "txid" in res:
-                blockhash = res['blockhash']
-                blocktime = int(res['blocktime'])
-                blockheight = res['blockheight']
+                blockhash = res["blockhash"]
+                blocktime = int(res["blocktime"])
+                blockheight = res["blockheight"]
                 status = await self.getinfo()  # Will use cached info if available
                 conf = status["blocks"] - blockheight
-                category1 = "generate" if res['reward'] > 0 else "send"
+                category1 = "generate" if res["reward"] > 0 else "send"
                 category2 = "receive"
                 # See https://bitcoin.org/en/developer-reference#gettransaction
                 out = {
-                    "amount": res['amount'],  # (numeric) The transaction amount in BIS
-                    "fee": res['fee'],   # (numeric) The amount of the fee in BIS
+                    "amount": res["amount"],  # (numeric) The transaction amount in BIS
+                    "fee": res["fee"],  # (numeric) The amount of the fee in BIS
                     "confirmations": conf,  # (numeric) The number of confirmations
                     "blockhash": blockhash,  # (string) The block hash
                     "blockheight": blockheight,  # extra for bis, block height
-                    "blockindex": -1,  # Irrelevant for Bis (numeric) The index of the transaction in the block that includes it
+                    "blockindex": -1,  # Irrelevant for Bis (numeric)
+                    # The index of the transaction in the block that includes it
                     "blocktime": blocktime,  # (numeric) The time in seconds since epoch (1 Jan 1970 GMT)
                     "txid": res["txid"],  # (string) The transaction id.
-                    "time": int(res["time"]),  # (numeric) The transaction time in seconds since epoch (1 Jan 1970 GMT)
-                    "timereceived": blocktime,  # (numeric) The time received in seconds since epoch (1 Jan 1970 GMT) - we don't have it, block time instead.
-                    "bip125-replaceable": "no",  # (string) Whether this transaction could be replaced due to BIP125 (replace-by-fee);
-                    "details" : [
+                    "time": int(
+                        res["time"]
+                    ),  # (numeric) The transaction time in seconds since epoch (1 Jan 1970 GMT)
+                    "timereceived": blocktime,  # (numeric) The time received in seconds since epoch (1 Jan 1970 GMT)
+                    # we don't have it, block time instead.
+                    "bip125-replaceable": "no",  # (string) Whether this transaction could be replaced due to BIP125
+                    "details": [
                         {  # Sender part
-                            "address": res["address"] if res['reward'] == 0 else res['blockminer'],  # (string) The bis sender address, miner for coinbase
-                            "category": category1, # (string) The transaction category.
-                            "amount": res['amount'],  # (numeric) The amount in BTC
-                            "label": res['openfield'],  # (string) A comment for the address/transaction, if any
+                            "address": res["address"]
+                            if res["reward"] == 0
+                            else res[
+                                "blockminer"
+                            ],  # (string) The bis sender address, miner for coinbase
+                            "category": category1,  # (string) The transaction category.
+                            "amount": res["amount"],  # (numeric) The amount in BTC
+                            "label": res[
+                                "openfield"
+                            ],  # (string) A comment for the address/transaction, if any
                             "vout": -1,  # Irrelevant for Bis (numeric) the vout value
-                            "fee": res['fee'],  # (numeric) The amount of the fee in BIS. Warning: unlike BTC, This is positive and taken from the sender balance.
-                            "abandoned": False
+                            "fee": res[
+                                "fee"
+                            ],  # (numeric) The amount of the fee in BIS.
+                            # Warning: unlike BTC, This is positive and taken from the sender balance.
+                            "abandoned": False,
                         },
                         {  # recipient part
-                            "address": res["recipient"],  # (string) The bis recipient address
+                            "address": res[
+                                "recipient"
+                            ],  # (string) The bis recipient address
                             "category": category2,  # (string) The transaction category.
-                            "amount": res['amount'],  # (numeric) The amount in BTC
-                            "label": res['openfield'],  # (string) A comment for the address/transaction, if any
+                            "amount": res["amount"],  # (numeric) The amount in BTC
+                            "label": res[
+                                "openfield"
+                            ],  # (string) A comment for the address/transaction, if any
                             "vout": -1,  # Irrelevant for Bis (numeric) the vout value
-                        }
+                        },
                     ],
-                    "hex": ""  # Not provided, see getrawtransaction (string) Raw data for transaction
+                    "hex": "",  # Not provided, see getrawtransaction (string) Raw data for transaction
                 }
                 return out
             else:
@@ -424,26 +550,33 @@ class Node:
             # print(e)
             return {"version": self.config.version, "error": str(e)}
 
-
-    def raw_format(self, tx: dict, mining_tx: dict, block_hash: str, block_height: int, current_height: int) -> dict:
-        """Helper to format a native tx from getblock to rawtransaction format. (see bismuth api_handler for reference)"""
+    def raw_format(
+        self,
+        tx: dict,
+        mining_tx: dict,
+        block_hash: str,
+        block_height: int,
+        current_height: int,
+    ) -> dict:
+        """Helper to format a native tx from getblock to rawtransaction format.
+        (see bismuth api_handler for reference)"""
         transaction = dict()
-        transaction['txid'] = tx['signature'][:56]
-        transaction['time'] = int(float(tx["timestamp"]))
-        transaction['hash'] = tx['signature']
-        transaction['address'] = tx['address']
-        transaction['recipient'] = tx['recipient']
-        transaction['amount'] = tx['amount']
-        transaction['fee'] = tx['fee']
-        transaction['reward'] = tx['reward']
-        transaction['operation'] = tx['operation']
-        transaction['openfield'] = tx['openfield']
-        transaction['pubkey'] = tx['pubkey']
-        transaction['blockhash'] = block_hash
-        transaction['blockheight'] = block_height
-        transaction['confirmations'] = current_height - block_height
-        transaction['blocktime'] = int(float(mining_tx["timestamp"]))
-        transaction['blockminer'] = mining_tx["address"]
+        transaction["txid"] = tx["signature"][:56]
+        transaction["time"] = int(float(tx["timestamp"]))
+        transaction["hash"] = tx["signature"]
+        transaction["address"] = tx["address"]
+        transaction["recipient"] = tx["recipient"]
+        transaction["amount"] = tx["amount"]
+        transaction["fee"] = tx["fee"]
+        transaction["reward"] = tx["reward"]
+        transaction["operation"] = tx["operation"]
+        transaction["openfield"] = tx["openfield"]
+        transaction["pubkey"] = tx["pubkey"]
+        transaction["blockhash"] = block_hash
+        transaction["blockheight"] = block_height
+        transaction["confirmations"] = current_height - block_height
+        transaction["blocktime"] = int(float(mining_tx["timestamp"]))
+        transaction["blockminer"] = mining_tx["address"]
         return transaction
 
     async def getblock(self, *args, **kwargs):
@@ -484,20 +617,31 @@ class Node:
                 # no block
                 out = {
                     "hash": block_hash,  # (string) the block hash (same as provided)
-                    "confirmations": -1
+                    "confirmations": -1,
                 }
                 return out
             size = len(str(res.values()))
-            block_height = res['block_height']
+            block_height = res["block_height"]
             conf = status["blocks"] - block_height
             if verbosity == 2:
-                # replace tx by list of txs instead of list of txids
-                mining_tx = res['transactions'][-1]
-                txid_list = [self.raw_format(transaction, mining_tx, block_hash=block_hash, block_height=block_height, current_height=status["blocks"]) for transaction in res['transactions']]
+                # Fill list of txs instead of list of txids
+                mining_tx = res["transactions"][-1]
+                txid_list = [
+                    self.raw_format(
+                        transaction,
+                        mining_tx,
+                        block_hash=block_hash,
+                        block_height=block_height,
+                        current_height=status["blocks"],
+                    )
+                    for transaction in res["transactions"]
+                ]
             else:
-                txid_list = [transaction['signature'][:56] for transaction in res['transactions']]
-            block_time = int(res['transactions'][-1]["timestamp"])
-            nonce = res['transactions'][-1]["openfield"]
+                txid_list = [
+                    transaction["signature"][:56] for transaction in res["transactions"]
+                ]
+            block_time = int(res["transactions"][-1]["timestamp"])
+            nonce = res["transactions"][-1]["openfield"]
 
             # print("res", res)
             out = {
@@ -507,19 +651,21 @@ class Node:
                 "strippedsize": size,  # (numeric) The block size excluding witness data - same for Bis
                 # "weight": n  # (numeric) The block weight as defined in BIP 141 - No sense for Bis
                 "height": block_height,  # (numeric) The block height or index
-                "version" : 1,  # (numeric) The block version - fixed 1 for Bismuth
+                "version": 1,  # (numeric) The block version - fixed 1 for Bismuth
                 "versionHex": "00000001",  # (string) The block version formatted in hexadecimal -
                 # "merkleroot": block_hash,  # (string) The merkle root - no sense for Bis, blockhash instead.
-                "tx" : txid_list,
-                "time" : block_time,  # (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)
+                "tx": txid_list,
+                "time": block_time,  # (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)
                 # "mediantime" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)
-                "nonce" : nonce,  # (str) The nonce **NOT** a numeric like with BTC.
+                "nonce": nonce,  # (str) The nonce **NOT** a numeric like with BTC.
                 # "bits": "1d00ffff",  # (string) The bits
-                "difficulty" : difficulty,  # (numeric) The difficulty. -1 for older nodes
-                "chainwork" : "00",   # (string) Expected number of hashes required to produce the chain up to this block (in hex) - 00 for current bis rpc implementation
-                "nTx" : len(txid_list),  # (numeric) The number of transactions in the block.
-                "previousblockhash" : previous_block_hash,  # (string) The hash of the previous block - "" for older nodes
-                "nextblockhash" : next_block_hash,  # (string) The hash of the next block - "" for older nodes
+                "difficulty": difficulty,  # (numeric) The difficulty. -1 for older nodes
+                "chainwork": "00",  # (string) Expected number of hashes required to produce the chain up to this block (in hex) - 00 for current bis rpc implementation
+                "nTx": len(
+                    txid_list
+                ),  # (numeric) The number of transactions in the block.
+                "previousblockhash": previous_block_hash,  # (string) The hash of the previous block - "" for older nodes
+                "nextblockhash": next_block_hash,  # (string) The hash of the next block - "" for older nodes
             }
             return out
         except Exception as e:
@@ -531,10 +677,16 @@ class Node:
 
     async def sendfrom(self, *args, **kwargs):
         """
-        Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful.
-        * sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address, ensuring the account has a valid balance using (minconf) confirmations. Returns the transaction ID if successful (not in JSON object).
+        Will send the given amount to the given address, ensuring the account has a valid balance
+        using (minconf) confirmations.
+        Returns the transaction ID if successful.
+        * sendfrom  -  (fromaccount) (tobismuthaddress) (amount) (minconf=1) (comment) (comment-to)  -
+        (amount) is a real and is rounded to 8 decimal places. Will send the given amount to the given address,
+        ensuring the account has a valid balance using (minconf) confirmations.
+        Returns the transaction ID if successful (not in JSON object).
         sends from the first address of the given account.
-        Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.
+        Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction.
+        comment-to is ignored.
         Uses "mpinsert" node command internally , since "txsend" is not secure: it sends the private key to the node.
         TODO: mpinsert will have to return a proper boolean or message for Ok/Ko
         Could be worked on with mempool modularization
@@ -547,12 +699,15 @@ class Node:
             if minconf < 1:
                 minconf = 1
             # TODO: minconf is ignored for now, we just transmit to the node.
-            comment = ''
+            comment = ""
             if len(args) > 5:
                 comment = args[5]
             # Create the raw transaction
             transaction = self.wallet.sign_transaction(
-                self.wallet.make_unsigned_transaction(address, to_address, amount, comment))
+                self.wallet.make_unsigned_transaction(
+                    address, to_address, amount, comment
+                )
+            )
             void = self.connection.command("mpinsert", [[transaction]])
             # TODO: when implemented node side, use returned status code
             # print("mpinsert res", void)
@@ -563,9 +718,11 @@ class Node:
 
     async def sendtoaddress(self, *args, **kwargs):
         """
-        (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places. Returns the transaction ID (txid) if successful.
+        (bismuthaddress) (amount) (comment) (comment-to)  -  (amount) is a real and is rounded to 8 decimal places.
+        Returns the transaction ID (txid) if successful.
         Sends from main account default address
-        Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction. comment-to is ignored.
+        Bismuthd specifics: comment is converted to "openfield data" and will be part of the transaction.
+        comment-to is ignored.
         Uses "mpinsert" node command internally , since "txsend" is not secure: it sends the private key to the node.
         TODO: mpinsert will have to return a proper boolean or message for Ok/Ko
         Could be worked on with mempool modularization
@@ -573,17 +730,23 @@ class Node:
         try:
             to_address, amount = args[1:3]
             # TODO: minconf is ignored for now, we just transmit to the node.
-            comment = ''
+            comment = ""
             if len(args) > 3:
                 comment = args[3]
-            # defualt account address
-            address = self.wallet.get_account_address('')
+            # default account address
+            address = self.wallet.get_account_address("")
             # Create the raw transaction
             transaction = self.wallet.sign_transaction(
-                self.wallet.make_unsigned_transaction(address, to_address, amount, comment))
-            void = self.connection.command("mpinsert", [[transaction]])
+                self.wallet.make_unsigned_transaction(
+                    address, to_address, amount, comment
+                )
+            )
+            res = self.connection.command("mpinsert", [[transaction]])
             # TODO: when implemented node side, use returned status code
-            # print("mpinsert res", void)
+            print("mpinsert res", res)
+            res = res[-1]
+            if res != "Success":
+                return {"version": self.config.version, "error": res}
             txid = transaction[4][:56]
             return txid
         except Exception as e:
@@ -637,12 +800,16 @@ class Node:
                 minconf = args[1]
             if minconf < 1:
                 minconf = 1
-            includeempty = False
+            include_empty = False
             if len(args) > 2:
-                includeempty = args[2]
+                include_empty = args[2]
             addresses = self.wallet.get_all_addresses()
-            # mockup: [{"address":"moPhStktszZGwtVjziE7eoQ76ATQqfhMtK","account":"","amount":10.00000000,"confirmations":1,"label":"","txids":["82790ce7d1fd0df0bc2ffd3cdfdd452e36a32b90885984213a9424f083f74df4"]}]
-            all = self.connection.command("api_listreceived", [addresses, minconf, includeempty])
+            # mockup: [{"address":"moPhStktszZGwtVjziE7eoQ76ATQqfhMtK","account":"","amount":10.00000000,
+            # "confirmations":1,"label":"",
+            # "txids":["82790ce7d1fd0df0bc2ffd3cdfdd452e36a32b90885984213a9424f083f74df4"]}]
+            all = self.connection.command(
+                "api_listreceived", [addresses, minconf, include_empty]
+            )
             return all
         except Exception as e:
             info = {"version": self.config.version, "error": str(e)}
@@ -659,12 +826,14 @@ class Node:
                 minconf = args[2]
             if minconf < 1:
                 minconf = 1
-            includeempty = False
+            include_empty = False
             if len(args) > 3:
-                includeempty = args[3]
+                include_empty = args[3]
             account = args[1]
             addresses = await self.getaddressesbyaccount(self, account)
-            all = self.connection.command("api_listreceived", [addresses, minconf, includeempty])
+            all = self.connection.command(
+                "api_listreceived", [addresses, minconf, include_empty]
+            )
             return all
         except Exception as e:
             info = {"version": self.config.version, "error": str(e)}
@@ -682,12 +851,15 @@ class Node:
             if minconf < 1:
                 minconf = 1
             # print('getb args', args)
-            account = args[1]
+            account = args[1] if len(args) > 1 else ""
             addresses = await self.getaddressesbyaccount(self, account)
             app_log.info("getbalance {} {} {}".format(account, addresses, minconf))
             balance = self.connection.command("api_getbalance", [addresses, minconf])
             return balance
         except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             return {"version": self.config.version, "error": str(e)}
 
     async def getbalancebyaddress(self, *args, **kwargs):
@@ -720,10 +892,12 @@ class Node:
                 minconf = 1
             accounts = self.wallet.list_accounts()
             balances = {}
-            # TODO: better reuse the generator for rpcwallet and use dict comprehension, or pass getbalance as a callback
+            # TODO: better reuse the generator for rpcwallet and use dict comprehension,
+            # or pass getbalance as a callback
             for account in accounts:
                 app_log.info("Account {}".format(account))
-                # when called from here, self is not passed (but it is when called from the server, so we add it to keep args management coherent.
+                # when called from here, self is not passed (but it is when called from the server,
+                # so we add it to keep args management coherent.
                 balances[account] = await self.getbalance(self, account, minconf)
             return balances
         except Exception as e:
@@ -782,7 +956,9 @@ class Node:
         """
         try:
             since, minconf, address = args[1], args[2], args[3]
-            info = self.connection.command("api_getaddresssince", [since, minconf, address])
+            info = self.connection.command(
+                "api_getaddresssince", [since, minconf, address]
+            )
             return info
         except Exception as e:
             info = {"version": self.config.version, "error": str(e)}
@@ -804,59 +980,182 @@ class Node:
         """
         try:
             # TODO: mockup
-            list_since_block = {"transactions": [
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 19, "generated": True,
-                 "blockhash": "1e60d7dba8bd93e99676dd72171e54eb8ffe35ebfb54439a646075c5a06eab11", "blockindex": 0,
-                 "blocktime": 1516567237, "txid": "282ecec426b322698b6616f1cf70ebd767824645ea2b5526f38984fa78601b02",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 27, "generated": True,
-                 "blockhash": "2e6925dfb821aa90a5b0e8c9c921076158c79941e0e5a3153140cfb950c97c29", "blockindex": 0,
-                 "blocktime": 1516567236, "txid": "5eaf83f5cb6b8f9b5bcf8f0ab0f2aa17ce3baf1d8d0e04467afbd2aba0a7b505",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 14, "generated": True,
-                 "blockhash": "39b09cc3bfbbf598bce6e00bc278be453a1d63940396dadb68a411a75e83c8e3", "blockindex": 0,
-                 "blocktime": 1516567238, "txid": "eb213bfbb2e864c8b0d76d343b8bc3e05e952b467f264ad26ee94dbf3ad1380c",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 4, "generated": True,
-                 "blockhash": "570e1067a5d10485c707c352ef63c0f055c9c0080e7ec000a712b510a64fcbed", "blockindex": 0,
-                 "blocktime": 1516567240, "txid": "5864254cb7ac736097257e31de0694afd98aac9286e0cf42458d414157acc70f",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 36, "generated": True,
-                 "blockhash": "13afa042517c9f7a367bf1a974344bcd59b91d60f622235172219bbbc5349bc0", "blockindex": 0,
-                 "blocktime": 1516567234, "txid": "8fe36ed8d940405717b2c67bbc04dfa493a1764f67bdfcc0be074c350001a512",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 35, "generated": True,
-                 "blockhash": "0d942352ec5a8e504da1c3e62b7cf13422960210a13f4f5c39cbc628cb1cba69", "blockindex": 0,
-                 "blocktime": 1516567235, "txid": "56d3a785f5d34c12fbdea4ce620b135d0efbdc673c68524b429afd6bffaa4313",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 11, "generated": True,
-                 "blockhash": "1427fea6b0fdfd0d2fbf64128fce1d00a6df311dc5c5cbc04513d472252aa5ae", "blockindex": 0,
-                 "blocktime": 1516567239, "txid": "720871f16132ed9fb0146d4d2bba20b62b1e7838005132d765f18694d1790314",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 43, "generated": True,
-                 "blockhash": "499760ed4b9eb832c2cc236b3769f03809e46c5770233c3e6ff3c3808ef2cac4", "blockindex": 0,
-                 "blocktime": 1516567233, "txid": "902fbbf636834c7ba3d9f1952ae0fdd368e349f369d47e1a061ab94c646f04f7",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 13, "generated": True,
-                 "blockhash": "374fc66965120c26f0d8270a5538ad4afc941e54591e500820ac454870e13a64", "blockindex": 0,
-                 "blocktime": 1516567238, "txid": "636a2009aa80186685c00e60bec2b1cd99ff1d027e1ebf890f9791d1bf0a47fa",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"},
-                {"account": "", "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W", "category": "immature",
-                 "amount": 50.00000000, "vout": 0, "confirmations": 34, "generated": True,
-                 "blockhash": "44877e0fb2ccf89118079043fa7eaa5357c94a484724bd329c4bf99dcb5c6bd6", "blockindex": 0,
-                 "blocktime": 1516567235, "txid": "0e62ce6d124ec07653341c7f3bd889f541b9f19bacca548d96e5cc941e7772fd",
-                 "walletconflicts": [], "time": 1516567222, "timereceived": 1516567222, "bip125-replaceable": "no"}],
-                                "removed": [],
-                                "lastblock": "524e347f08e65c7d23bb7a24e6fae828f22db8a1d198bbe11aea655c18015a91"}
+            list_since_block = {
+                "transactions": [
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 19,
+                        "generated": True,
+                        "blockhash": "1e60d7dba8bd93e99676dd72171e54eb8ffe35ebfb54439a646075c5a06eab11",
+                        "blockindex": 0,
+                        "blocktime": 1516567237,
+                        "txid": "282ecec426b322698b6616f1cf70ebd767824645ea2b5526f38984fa78601b02",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 27,
+                        "generated": True,
+                        "blockhash": "2e6925dfb821aa90a5b0e8c9c921076158c79941e0e5a3153140cfb950c97c29",
+                        "blockindex": 0,
+                        "blocktime": 1516567236,
+                        "txid": "5eaf83f5cb6b8f9b5bcf8f0ab0f2aa17ce3baf1d8d0e04467afbd2aba0a7b505",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 14,
+                        "generated": True,
+                        "blockhash": "39b09cc3bfbbf598bce6e00bc278be453a1d63940396dadb68a411a75e83c8e3",
+                        "blockindex": 0,
+                        "blocktime": 1516567238,
+                        "txid": "eb213bfbb2e864c8b0d76d343b8bc3e05e952b467f264ad26ee94dbf3ad1380c",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 4,
+                        "generated": True,
+                        "blockhash": "570e1067a5d10485c707c352ef63c0f055c9c0080e7ec000a712b510a64fcbed",
+                        "blockindex": 0,
+                        "blocktime": 1516567240,
+                        "txid": "5864254cb7ac736097257e31de0694afd98aac9286e0cf42458d414157acc70f",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 36,
+                        "generated": True,
+                        "blockhash": "13afa042517c9f7a367bf1a974344bcd59b91d60f622235172219bbbc5349bc0",
+                        "blockindex": 0,
+                        "blocktime": 1516567234,
+                        "txid": "8fe36ed8d940405717b2c67bbc04dfa493a1764f67bdfcc0be074c350001a512",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 35,
+                        "generated": True,
+                        "blockhash": "0d942352ec5a8e504da1c3e62b7cf13422960210a13f4f5c39cbc628cb1cba69",
+                        "blockindex": 0,
+                        "blocktime": 1516567235,
+                        "txid": "56d3a785f5d34c12fbdea4ce620b135d0efbdc673c68524b429afd6bffaa4313",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 11,
+                        "generated": True,
+                        "blockhash": "1427fea6b0fdfd0d2fbf64128fce1d00a6df311dc5c5cbc04513d472252aa5ae",
+                        "blockindex": 0,
+                        "blocktime": 1516567239,
+                        "txid": "720871f16132ed9fb0146d4d2bba20b62b1e7838005132d765f18694d1790314",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 43,
+                        "generated": True,
+                        "blockhash": "499760ed4b9eb832c2cc236b3769f03809e46c5770233c3e6ff3c3808ef2cac4",
+                        "blockindex": 0,
+                        "blocktime": 1516567233,
+                        "txid": "902fbbf636834c7ba3d9f1952ae0fdd368e349f369d47e1a061ab94c646f04f7",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 13,
+                        "generated": True,
+                        "blockhash": "374fc66965120c26f0d8270a5538ad4afc941e54591e500820ac454870e13a64",
+                        "blockindex": 0,
+                        "blocktime": 1516567238,
+                        "txid": "636a2009aa80186685c00e60bec2b1cd99ff1d027e1ebf890f9791d1bf0a47fa",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                    {
+                        "account": "",
+                        "address": "n2LAv7w2vG45gZSaFZBXQhTeaMndS1Y78W",
+                        "category": "immature",
+                        "amount": 50.00000000,
+                        "vout": 0,
+                        "confirmations": 34,
+                        "generated": True,
+                        "blockhash": "44877e0fb2ccf89118079043fa7eaa5357c94a484724bd329c4bf99dcb5c6bd6",
+                        "blockindex": 0,
+                        "blocktime": 1516567235,
+                        "txid": "0e62ce6d124ec07653341c7f3bd889f541b9f19bacca548d96e5cc941e7772fd",
+                        "walletconflicts": [],
+                        "time": 1516567222,
+                        "timereceived": 1516567222,
+                        "bip125-replaceable": "no",
+                    },
+                ],
+                "removed": [],
+                "lastblock": "524e347f08e65c7d23bb7a24e6fae828f22db8a1d198bbe11aea655c18015a91",
+            }
             return list_since_block
         except Exception as e:
             return {"version": self.config.version, "error": str(e)}

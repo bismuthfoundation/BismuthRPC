@@ -4,7 +4,7 @@ A Json-RPC Server for [Bismuth Crypto Currency](https://github.com/hclivess/Bism
 A python json-rpc server that will allow to interact with a bismuth node like we do with bitcoind.
 Will ease integration of Bismuth with exchanges and pools.
 
-This will be an independent server, not necessarily part of the core node code.
+This will be an independant server, not necessarly part of the core node code.
 
 # Current status
 
@@ -13,7 +13,7 @@ All info and current state of working commands is in the [Commands.md file](RPCS
 # Helping
 
 See Github issues for help wanted.  
-Thanks to @rvanduiven and @iyomisc for their contribution.
+Thanks to @rvanduiven and iyomisc for their contribution.
 
 ## References
 https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list  

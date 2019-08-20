@@ -1,3 +1,4 @@
+polysign>=0.1.0
 tornado>=6.0.3
 jsonrpcserver
 jsonrpcclient[requests]>2,<3

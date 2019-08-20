@@ -22,7 +22,7 @@ import rpcconfig
 from nodeclient import Node
 from tornado_jsonrpc import JSONRPCHandler
 
-__version__ = "0.0.36"
+__version__ = "0.0.40"
 
 
 if __name__ == "__main__":
@@ -55,8 +55,6 @@ if __name__ == "__main__":
     formatter2 = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     rotateHandler2.setFormatter(formatter2)
     access_log.addHandler(rotateHandler2)
-
-
 
     try:
         node = Node(rpc_config)
