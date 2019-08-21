@@ -25,7 +25,7 @@ from polysign.signerfactory import SignerFactory
 
 from rpckeys import Key
 
-__version__ = "0.0.66"
+__version__ = "0.0.67"
 
 
 app_log = getLogger("tornado.application")
@@ -301,10 +301,11 @@ class Wallet:
             str(data),
         ]
 
-    def sign_transaction(self, transaction):
+    def sign_transaction(self, transaction: list):
         """
         Lookup the correct key and Sign a transaction.
         Throws an exception if the address is not in the wallet.
+        :param address: the address to send from (default address if empty)
         :param transaction: an unsigned transaction from _make_unsigned_transaction
         :return: List. A signed transaction.
         """
@@ -395,7 +396,12 @@ class Wallet:
         """Finds the account of the address, then it's keys"""
         try:
             # print(self.address_to_account[address])
-            account = self._get_account(self.address_to_account[address])
+            try:
+                account_name = self.address_to_account[address]
+            except:
+                getLogger("tornado.application").warning("No account found for {}, using default. May need a reindex".format(address))
+                account_name = ""
+            account = self._get_account(account_name)
             for keys in account["addresses"]:
                 # keys is [address, encrypted, privkey, pubkey]
                 if keys[0] == address:

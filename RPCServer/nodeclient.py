@@ -735,6 +735,7 @@ class Node:
                 comment = args[3]
             # default account address
             address = self.wallet.get_account_address("")
+            # getLogger("tornado.application").warning("Using address {}".format(address))
             # Create the raw transaction
             transaction = self.wallet.sign_transaction(
                 self.wallet.make_unsigned_transaction(
