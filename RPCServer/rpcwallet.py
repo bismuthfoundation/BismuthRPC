@@ -399,16 +399,16 @@ class Wallet:
             try:
                 account_name = self.address_to_account[address]
             except:
-                getLogger("tornado.application").warning("No account found for {}, using default. May need a reindex".format(address))
+                getLogger("tornado.application").warning("Found no account for {}, using default. May need a reindex".format(address))
                 account_name = ""
             account = self._get_account(account_name)
             for keys in account["addresses"]:
                 # keys is [address, encrypted, privkey, pubkey]
                 if keys[0] == address:
                     return keys
-            raise ValueError("Unknown address")
+            raise ValueError("Unknown address: {}".format(address))
         except Exception as e:
-            raise ValueError("Unknown address")
+            raise ValueError("Unknown address: {}".format(address))
 
     def validate_address(self, address):
         """
